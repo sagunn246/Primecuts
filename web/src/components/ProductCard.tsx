@@ -1,8 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingCart, Check, Plus, ArrowRight } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { getProductImageUrl, handleProductImageError } from "@/utils/imageUtils";
+import {
+  getProductImageUrl,
+  handleProductImageError,
+} from "@/utils/imageUtils";
 
 interface Variant {
   name: string;
@@ -13,7 +16,7 @@ interface ProductCardProps {
   id: string;
   slug: string;
   name: string;
-  priceType?: 'weight' | 'variant';
+  priceType?: "weight" | "variant";
   pricePerKg?: number;
   variants?: Variant[];
   image?: string;
@@ -21,19 +24,21 @@ interface ProductCardProps {
   isAvailable?: boolean;
 }
 
-export default function ProductCard({ 
-  id, 
-  slug, 
-  name, 
+export default function ProductCard({
+  id,
+  slug,
+  name,
   category,
-  priceType = 'weight',
-  pricePerKg, 
+  priceType = "weight",
+  pricePerKg,
   variants = [],
-  image, 
-  isAvailable = true 
+  image,
+  isAvailable = true,
 }: ProductCardProps) {
   const [selectedWeight, setSelectedWeight] = useState<number>(500);
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(variants.length > 0 ? variants[0] : null);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
+    variants.length > 0 ? variants[0] : null,
+  );
   const [isAdded, setIsAdded] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const { addWeightItem, addVariantItem } = useCart();
@@ -42,35 +47,47 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
     if (!isAvailable) return;
-    
-    if (priceType === 'weight') {
-      addWeightItem({ id, slug, name, priceType, pricePerKg, image: image || "" }, selectedWeight, 1);
-    } else if (priceType === 'variant' && selectedVariant) {
-      addVariantItem({ id, slug, name, priceType, image: image || "" }, selectedVariant.name, selectedVariant.price, 1);
+
+    if (priceType === "weight") {
+      addWeightItem(
+        { id, slug, name, priceType, pricePerKg, image: image || "" },
+        selectedWeight,
+        1,
+      );
+    } else if (priceType === "variant" && selectedVariant) {
+      addVariantItem(
+        { id, slug, name, priceType, image: image || "" },
+        selectedVariant.name,
+        selectedVariant.price,
+        1,
+      );
     }
-    
+
     setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 1800);
+    setTimeout(() => setIsAdded(false), 1600);
   };
 
-  // Dynamic price calculated based on selected weight
-  const displayPrice = priceType === 'weight' && pricePerKg
-    ? Math.round((selectedWeight / 1000) * pricePerKg)
-    : selectedVariant?.price || (pricePerKg ? Math.round((500 / 1000) * pricePerKg) : 0);
+  const displayPrice =
+    priceType === "weight" && pricePerKg
+      ? Math.round((selectedWeight / 1000) * pricePerKg)
+      : selectedVariant?.price ||
+        (pricePerKg ? Math.round((500 / 1000) * pricePerKg) : 0);
 
   return (
-    <div
-      className={`group bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 hover:border-primary/40 transition-all duration-300 hover:shadow-xl flex flex-col justify-between overflow-hidden h-full relative ${
+    <article
+      className={`group bg-white rounded-2xl border border-zinc-200/90 hover:border-zinc-300 transition-all duration-200 hover:shadow-md flex flex-col justify-between overflow-hidden h-full ${
         !isAvailable ? "opacity-75" : ""
       }`}
     >
-      {/* Media & Image Container */}
-      <div className="relative p-1.5 sm:p-3 pb-0">
-        <div className="relative aspect-square sm:aspect-[4/3] w-full rounded-xl sm:rounded-2xl bg-stone-100 overflow-hidden flex items-center justify-center">
-          <Link to={`/product/${slug}`} className="block w-full h-full relative overflow-hidden">
-            {/* Shimmer Placeholder */}
+      {/* Image Container */}
+      <div className="relative p-2 sm:p-2.5 pb-0">
+        <div className="relative aspect-[4/3] w-full rounded-xl bg-zinc-100 overflow-hidden flex items-center justify-center border border-zinc-100">
+          <Link
+            to={`/product/${slug}`}
+            className="block w-full h-full relative overflow-hidden"
+          >
             {!imgLoaded && image && (
-              <div className="absolute inset-0 bg-stone-200 animate-pulse" />
+              <div className="absolute inset-0 bg-zinc-200 animate-pulse" />
             )}
             <img
               src={getProductImageUrl(image)}
@@ -82,23 +99,23 @@ export default function ProductCard({
                 setImgLoaded(true);
                 handleProductImageError(e);
               }}
-              className={`w-full h-full object-cover object-center transition-all duration-500 group-hover:scale-105 ${
+              className={`w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 ${
                 imgLoaded ? "opacity-100" : "opacity-0"
               } ${!isAvailable ? "grayscale" : ""}`}
             />
           </Link>
 
-          {/* Floating Category Tag (hidden on small mobile screens to keep card clean) */}
-          <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 pointer-events-none z-10 hidden sm:block">
-            <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold uppercase">
+          {/* Category Tag (Desktop & Tablet) */}
+          <div className="absolute top-2 left-2 pointer-events-none z-10 hidden sm:block">
+            <span className="px-2 py-0.5 rounded-md bg-zinc-900/80 backdrop-blur-xs text-white text-[10px] font-semibold">
               {category}
             </span>
           </div>
 
-          {/* Availability Badge */}
+          {/* Sold Out Overlay */}
           {!isAvailable && (
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-20">
-              <span className="text-[8px] sm:text-xs font-bold text-white px-2 py-0.5 bg-primary rounded-full uppercase">
+            <div className="absolute inset-0 bg-zinc-950/55 flex items-center justify-center pointer-events-none z-20">
+              <span className="text-[10px] sm:text-xs font-bold text-white px-2.5 py-0.5 bg-zinc-900 rounded-md uppercase tracking-wide">
                 Sold Out
               </span>
             </div>
@@ -106,35 +123,38 @@ export default function ProductCard({
         </div>
       </div>
 
-      {/* Card Content */}
-      <div className="p-2 sm:p-4 flex flex-col flex-grow justify-between text-left">
+      {/* Card Body */}
+      <div className="p-2.5 sm:p-3.5 flex flex-col flex-grow justify-between text-left">
         <div>
-          {/* Title */}
-          <Link to={`/product/${slug}`} className="block group/title mb-1 sm:mb-2">
-            <h3 className="font-bold text-stone-900 text-[11px] sm:text-[15px] leading-tight line-clamp-2 group-hover/title:text-primary transition-colors min-h-[26px] sm:min-h-[40px]">
+          {/* Product Title */}
+          <Link to={`/product/${slug}`} className="block group/title mb-1.5">
+            <h3 className="font-bold text-zinc-900 text-xs sm:text-[15px] leading-snug line-clamp-2 group-hover/title:text-primary transition-colors min-h-[32px] sm:min-h-[42px]">
               {name}
             </h3>
           </Link>
 
-          {/* Price */}
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-0.5 mb-1.5 sm:mb-3">
-            <div className="flex items-baseline gap-1">
-              <span className="text-xs sm:text-lg font-black text-primary tracking-tight">
-                Rs. {displayPrice}
+          {/* Single-Line Price Row (Never wraps Rs. and number onto separate lines) */}
+          <div className="flex items-baseline justify-between gap-1 mb-2.5">
+            <div className="flex items-baseline gap-1 min-w-0">
+              <span className="text-sm sm:text-lg font-extrabold text-primary tracking-tight whitespace-nowrap tabular-nums">
+                Rs. {displayPrice.toLocaleString()}
               </span>
               {priceType === "weight" ? (
-                <span className="text-[9px] sm:text-[11px] text-stone-500 font-semibold">
-                  /{selectedWeight >= 1000 ? `${selectedWeight / 1000}kg` : `${selectedWeight}g`}
+                <span className="text-[10px] sm:text-xs text-zinc-500 font-semibold whitespace-nowrap">
+                  /
+                  {selectedWeight >= 1000
+                    ? `${selectedWeight / 1000}kg`
+                    : `${selectedWeight}g`}
                 </span>
               ) : selectedVariant ? (
-                <span className="text-[9px] sm:text-[11px] text-stone-500 font-semibold truncate max-w-[100px] sm:max-w-[140px]">
+                <span className="text-[10px] sm:text-xs text-zinc-500 font-semibold truncate">
                   /{selectedVariant.name}
                 </span>
               ) : null}
             </div>
 
             {priceType === "weight" && pricePerKg && (
-              <span className="text-stone-400 text-[9px] sm:text-[11px] hidden sm:inline">
+              <span className="text-zinc-400 text-[10px] font-medium hidden sm:inline whitespace-nowrap tabular-nums">
                 Rs. {pricePerKg}/kg
               </span>
             )}
@@ -142,10 +162,10 @@ export default function ProductCard({
         </div>
 
         {/* Controls Area */}
-        <div className="space-y-1 sm:space-y-2 pt-1">
-          {/* Compact Weight Pills (2 options: 500g & 1kg for spacious, clean & responsive layout) */}
+        <div className="space-y-1.5 sm:space-y-2">
+          {/* Segmented Weight / Variant Selector — Uses Charcoal #18181B for Active Pill to Avoid Double-Red Clutter */}
           {priceType === "weight" ? (
-            <div className="grid grid-cols-2 gap-1 sm:gap-1.5 p-1 bg-stone-100/90 rounded-xl border border-stone-200/80">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/80">
               {[500, 1000].map((w) => {
                 const isSelected = selectedWeight === w;
                 return (
@@ -158,13 +178,13 @@ export default function ProductCard({
                       e.stopPropagation();
                       setSelectedWeight(w);
                     }}
-                    className={`h-7 sm:h-7.5 px-1 text-[10.5px] sm:text-xs font-black rounded-lg transition-transform flex items-center justify-center text-center min-w-0 cursor-pointer select-none active:scale-95 ${
+                    className={`h-7 sm:h-7.5 px-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all flex items-center justify-center text-center min-w-0 cursor-pointer select-none active:scale-95 ${
                       isSelected
-                        ? "bg-primary text-white shadow-xs"
-                        : "text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-50 border border-stone-200/50"
+                        ? "bg-zinc-900 text-white shadow-2xs"
+                        : "text-zinc-700 hover:text-zinc-900 bg-white border border-zinc-200/60"
                     }`}
                   >
-                    <span className="leading-none tracking-tight">
+                    <span className="leading-none">
                       {w >= 1000 ? "1kg" : "500g"}
                     </span>
                   </button>
@@ -173,7 +193,7 @@ export default function ProductCard({
             </div>
           ) : (
             variants.length > 0 && (
-              <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-stone-200/60 overflow-x-auto no-scrollbar">
+              <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/80">
                 {variants.slice(0, 2).map((v, idx) => {
                   const isSelected = selectedVariant?.name === v.name;
                   return (
@@ -186,10 +206,10 @@ export default function ProductCard({
                         e.stopPropagation();
                         setSelectedVariant(v);
                       }}
-                      className={`flex-1 h-7 sm:h-7.5 py-0.5 text-[9px] sm:text-[11px] font-extrabold rounded-lg transition-transform truncate px-1 cursor-pointer flex items-center justify-center active:scale-95 ${
+                      className={`h-7 sm:h-7.5 px-1.5 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all truncate cursor-pointer flex items-center justify-center active:scale-95 ${
                         isSelected
-                          ? "bg-primary text-white shadow-xs"
-                          : "text-stone-600 hover:text-stone-900 bg-white/70"
+                          ? "bg-zinc-900 text-white shadow-2xs"
+                          : "text-zinc-700 hover:text-zinc-900 bg-white border border-zinc-200/60"
                       }`}
                     >
                       <span className="truncate leading-none">{v.name}</span>
@@ -200,33 +220,35 @@ export default function ProductCard({
             )
           )}
 
-          {/* Add to Cart CTA Button */}
+          {/* Full-Width Add to Cart CTA Button — Strictly Crimson / Charcoal */}
           <button
             type="button"
-            disabled={!isAvailable || (priceType === "variant" && !selectedVariant)}
-            onClick={handleAddToCart}
-            className={`w-full py-1.5 sm:py-2.5 rounded-xl font-bold text-[10px] sm:text-xs tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer shadow-xs select-none active:scale-95 ${
+            disabled={
               !isAvailable || (priceType === "variant" && !selectedVariant)
-                ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none"
+            }
+            onClick={handleAddToCart}
+            className={`w-full h-8 sm:h-9 rounded-xl font-bold text-[11px] sm:text-xs tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer select-none active:scale-95 ${
+              !isAvailable || (priceType === "variant" && !selectedVariant)
+                ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
                 : isAdded
-                ? "bg-emerald-600 text-white shadow-emerald-600/20"
-                : "bg-primary hover:bg-primary/90 text-white shadow-primary/20"
+                  ? "bg-zinc-900 text-white"
+                  : "bg-primary hover:bg-primary-hover text-white shadow-2xs"
             }`}
           >
             {isAdded ? (
               <span className="flex items-center gap-1">
-                <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
-                <span className="hidden sm:inline">Added</span>
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Added</span>
               </span>
             ) : (
               <span className="flex items-center gap-1">
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>ADD</span>
               </span>
             )}
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

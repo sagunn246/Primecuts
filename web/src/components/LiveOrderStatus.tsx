@@ -1,3 +1,6 @@
+import React from "react";
+import { Check } from "lucide-react";
+
 interface LiveOrderStatusProps {
   status: string;
 }
@@ -9,26 +12,21 @@ export default function LiveOrderStatus({ status }: LiveOrderStatusProps) {
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`w-2.5 h-2.5 rounded-full ${
-          status === "pending"
-            ? "bg-orange-500 animate-pulse"
-            : isTerminalFail
-            ? "bg-red-500"
+        className={`w-2 h-2 rounded-full ${
+          isTerminalFail
+            ? "bg-primary"
             : isTerminalSuccess
-            ? "bg-green-500"
-            : "bg-blue-500 animate-pulse"
+              ? "bg-zinc-900"
+              : "bg-primary animate-pulse"
         }`}
       />
       <span
-        className={`font-black text-xs uppercase tracking-wider ${
-          isTerminalFail
-            ? "text-red-600"
-            : isTerminalSuccess
-            ? "text-green-600"
-            : "text-stone-900"
+        className={`font-bold text-xs uppercase tracking-wider inline-flex items-center gap-1 ${
+          isTerminalFail ? "text-primary" : "text-zinc-900"
         }`}
       >
-        {status === "delivered" ? "Delivered ✓" : status}
+        <span>{status}</span>
+        {isTerminalSuccess && <Check className="w-3.5 h-3.5 text-primary" />}
       </span>
     </div>
   );

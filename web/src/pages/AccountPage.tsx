@@ -16,7 +16,8 @@ import {
   VolumeX,
   MapPin,
   Clock,
-  Sparkles,
+  Truck,
+  Store,
   Save,
   ChevronRight,
   ShoppingBag,
@@ -360,7 +361,7 @@ export default function AccountPage() {
                 {user.email || user.phone || "Prime Cuts Member"}
               </p>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-700 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-full">
               Verified
             </span>
           </div>
@@ -494,7 +495,7 @@ export default function AccountPage() {
                 className="w-full flex items-center justify-between p-3.5 hover:bg-stone-50 active:bg-stone-100/70 transition-colors text-left cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-stone-100 border border-stone-200 text-stone-800 flex items-center justify-center">
                     <Bell className="w-5 h-5" />
                   </div>
                   <div>
@@ -512,7 +513,7 @@ export default function AccountPage() {
                 className="w-full flex items-center justify-between p-3.5 hover:bg-stone-50 active:bg-stone-100/70 transition-colors text-left cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-stone-100 border border-stone-200 text-stone-800 flex items-center justify-center">
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div>
@@ -529,8 +530,8 @@ export default function AccountPage() {
                 className="flex items-center justify-between p-3.5 hover:bg-stone-50 active:bg-stone-100/70 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-stone-100 border border-stone-200 text-stone-800 flex items-center justify-center">
+                    <Store className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-bold text-sm text-stone-900">Fresh Meat Catalog</h3>
@@ -554,7 +555,7 @@ export default function AccountPage() {
                 <div className="py-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     {soundEnabled ? (
-                      <Volume2 className="w-4 h-4 text-emerald-600" />
+                      <Volume2 className="w-4 h-4 text-primary" />
                     ) : (
                       <VolumeX className="w-4 h-4 text-stone-400" />
                     )}
@@ -609,14 +610,8 @@ export default function AccountPage() {
                 <h3 className="font-black text-xs uppercase tracking-wider text-stone-700">
                   Butcher Outlet & Contact
                 </h3>
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                    isOpen
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-zinc-100 text-zinc-800 border-zinc-200">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-primary" : "bg-zinc-400"}`} />
                   <span>{isOpen ? "Shop Open Now" : "Pre-Order Available"}</span>
                 </span>
               </div>
@@ -669,10 +664,10 @@ export default function AccountPage() {
 
                 <div className="flex items-center justify-between px-1 text-[11px] text-stone-500">
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <Truck className="w-3.5 h-3.5 text-primary" />
                     <span>Free Delivery:</span>
                   </span>
-                  <span className="font-bold text-amber-700">Orders above Rs. {freeDeliveryThreshold}</span>
+                  <span className="font-bold text-stone-800">Orders above Rs. {freeDeliveryThreshold}</span>
                 </div>
               </div>
             </div>
@@ -1062,13 +1057,10 @@ export default function AccountPage() {
 
                     if (notif.type === "ORDER_PREPARING") {
                       StatusIcon = ChefHat;
-                      borderClass = "border-amber-200 bg-amber-50/50";
                     } else if (notif.type === "ORDER_READY") {
                       StatusIcon = PackageCheck;
-                      borderClass = "border-purple-200 bg-purple-50/50";
                     } else if (notif.type === "ORDER_COMPLETED") {
                       StatusIcon = CheckCircle2;
-                      borderClass = "border-emerald-200 bg-emerald-50/50";
                     } else if (notif.type === "ORDER_CANCELLED") {
                       StatusIcon = XCircle;
                       borderClass = "border-red-200 bg-red-50/50";

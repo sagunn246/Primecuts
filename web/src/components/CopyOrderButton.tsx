@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Copy, Check } from "lucide-react";
 
 interface CopyOrderButtonProps {
@@ -20,18 +20,19 @@ export default function CopyOrderButton({ orderText }: CopyOrderButtonProps) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
-      className="flex items-center justify-center gap-2 w-full py-4 bg-white border border-stone-200 rounded-xl font-bold text-stone-700 hover:bg-stone-50 transition-colors shadow-sm cursor-pointer"
+      className="flex items-center justify-center gap-2 w-full py-3 bg-white border border-zinc-200 rounded-xl font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer text-xs"
     >
       {copied ? (
         <>
-          <Check className="w-5 h-5 text-green-500" />
-          <span>Copied to Clipboard!</span>
+          <Check className="w-4 h-4 text-primary" />
+          <span>Copied</span>
         </>
       ) : (
         <>
-          <Copy className="w-5 h-5" />
-          <span>Copy Order Details</span>
+          <Copy className="w-4 h-4 text-zinc-600" />
+          <span>Copy Details</span>
         </>
       )}
     </button>

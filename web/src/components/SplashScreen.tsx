@@ -41,7 +41,9 @@ export default function SplashScreen() {
             </div>
             <h1
               className="text-4xl font-black text-white uppercase tracking-tight"
-              style={{ fontFamily: "'Anton', 'Archivo Black', system-ui, sans-serif" }}
+              style={{
+                fontFamily: "'Anton', 'Archivo Black', system-ui, sans-serif",
+              }}
             >
               PRIME <span className="text-primary">CUTS</span>
             </h1>
@@ -49,7 +51,7 @@ export default function SplashScreen() {
               — ARTISANAL BUTCHER HOUSE —
             </p>
             <p className="text-primary text-xs font-extrabold tracking-wider mt-2">
-              ★ Premium Cuts • Quality You Can Trust ★
+              Premium Cuts • Quality You Can Trust
             </p>
           </motion.div>
         </motion.div>

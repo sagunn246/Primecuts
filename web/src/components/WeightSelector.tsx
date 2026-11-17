@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Minus, CheckCircle2, Scale } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Minus, Check, Scale, ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { Product, Variant } from "@/types/types";
 
@@ -12,11 +12,14 @@ const DEFAULT_PRESET_WEIGHTS = [
   { value: 250, unit: "g", label: "250g" },
   { value: 500, unit: "g", label: "500g" },
   { value: 750, unit: "g", label: "750g" },
-  { value: 1, unit: "kg", label: "1kg" },
-  { value: 2, unit: "kg", label: "2kg" },
+  { value: 1, unit: "kg", label: "1 kg" },
+  { value: 2, unit: "kg", label: "2 kg" },
 ];
 
-export default function WeightSelector({ product, isAvailable }: WeightSelectorProps) {
+export default function WeightSelector({
+  product,
+  isAvailable,
+}: WeightSelectorProps) {
   const { addWeightItem, addVariantItem } = useCart();
 
   const [weightInGrams, setWeightInGrams] = useState<number>(500);
@@ -29,13 +32,31 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
 
   const [qty, setQty] = useState<number>(1);
   const [isAdded, setIsAdded] = useState(false);
-  const [cutPreference, setCutPreference] = useState<string>("Curry Cut (Medium)");
+  const [cutPreference, setCutPreference] = useState<string>(
+    "Curry Cut (Medium)"
+  );
 
   const CUT_OPTIONS = [
-    { id: "Curry Cut (Medium)", label: "Curry Cut", sub: "Standard bone-in gravy pieces" },
-    { id: "Small Pieces (झोल)", label: "Small Cuts", sub: "Bite-size for soup / gravy" },
-    { id: "Biryani Cut (Large)", label: "Biryani Cut", sub: "Succulent large cuts" },
-    { id: "Boneless / Trimmed", label: "Boneless / Lean", sub: "Clean lean meat" },
+    {
+      id: "Curry Cut (Medium)",
+      label: "Curry Cut",
+      sub: "Standard bone-in gravy pieces",
+    },
+    {
+      id: "Small Pieces (झोल)",
+      label: "Small Cuts (Jhol)",
+      sub: "Bite-size for soup & gravy",
+    },
+    {
+      id: "Biryani Cut (Large)",
+      label: "Biryani Cut",
+      sub: "Large traditional pieces",
+    },
+    {
+      id: "Boneless / Trimmed",
+      label: "Boneless / Lean",
+      sub: "Clean trimmed meat",
+    },
   ];
 
   const activeWeightGrams = isCustom
@@ -44,7 +65,10 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
 
   let finalPrice = "0.00";
   if (product.priceType === "weight" && product.pricePerKg) {
-    finalPrice = Math.max(0, (activeWeightGrams / 1000) * product.pricePerKg * qty).toFixed(2);
+    finalPrice = Math.max(
+      0,
+      (activeWeightGrams / 1000) * product.pricePerKg * qty
+    ).toFixed(2);
   } else if (product.priceType === "variant" && selectedVariant) {
     finalPrice = (selectedVariant.price * qty).toFixed(2);
   }
@@ -66,8 +90,7 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
   };
 
   const handleCustomKgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setCustomKgStr(val);
+    setCustomKgStr(e.target.value);
   };
 
   const increaseQty = () => setQty((prev) => prev + 1);
@@ -108,21 +131,24 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
     }
 
     setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+    setTimeout(() => setIsAdded(false), 1800);
   };
 
   return (
-    <div className="flex flex-col mt-2 sm:mt-4 space-y-3 sm:space-y-5">
-      {/* Option Selector */}
+    <div className="flex flex-col space-y-4 sm:space-y-5">
+      {/* Weight or Variant Selector */}
       <div>
-        <p className="font-extrabold text-stone-900 mb-2 text-xs uppercase tracking-wider">
-          {product.priceType === "weight" ? "Select Weight" : "Select Cut Variant"}
-        </p>
+        <label className="block font-semibold text-zinc-900 mb-2 text-xs uppercase tracking-wider">
+          {product.priceType === "weight"
+            ? "Select Weight"
+            : "Select Pack Variant"}
+        </label>
 
         {product.priceType === "weight" ? (
-          <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
             {DEFAULT_PRESET_WEIGHTS.map((preset, idx) => {
-              const presetGrams = preset.unit === "kg" ? preset.value * 1000 : preset.value;
+              const presetGrams =
+                preset.unit === "kg" ? preset.value * 1000 : preset.value;
               const isSelected = !isCustom && weightInGrams === presetGrams;
 
               return (
@@ -130,10 +156,10 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
                   key={idx}
                   type="button"
                   onClick={() => handlePresetSelect(preset.value, preset.unit)}
-                  className={`py-1.5 sm:py-2 px-2.5 sm:px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border cursor-pointer active:scale-95 text-center ${
+                  className={`h-9 px-3.5 rounded-lg font-semibold text-xs sm:text-sm transition-all border cursor-pointer text-center tabular-nums ${
                     isSelected
-                      ? "border-primary bg-primary text-white shadow-sm font-black"
-                      : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50"
+                      ? "border-zinc-900 bg-zinc-900 text-white shadow-2xs"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
                   }`}
                 >
                   {preset.label}
@@ -145,28 +171,28 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
               <button
                 type="button"
                 onClick={handleCustomSelect}
-                className={`py-1.5 sm:py-2 px-2.5 sm:px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${
+                className={`h-9 px-3.5 rounded-lg font-semibold text-xs sm:text-sm transition-all border cursor-pointer flex items-center justify-center gap-1.5 ${
                   isCustom
-                    ? "border-primary bg-primary text-white shadow-sm font-black"
-                    : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50"
+                    ? "border-zinc-900 bg-zinc-900 text-white shadow-2xs"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
                 }`}
               >
                 <Scale className="w-3.5 h-3.5" />
-                <span>Custom</span>
+                <span>Custom kg</span>
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
             {product.variants?.map((v, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setSelectedVariant(v)}
-                className={`py-1.5 sm:py-2 px-2.5 sm:px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border cursor-pointer active:scale-95 ${
+                className={`h-9 px-3.5 rounded-lg font-semibold text-xs sm:text-sm transition-all border cursor-pointer ${
                   selectedVariant?.name === v.name
-                    ? "border-primary bg-primary text-white shadow-sm font-black"
-                    : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50"
+                    ? "border-zinc-900 bg-zinc-900 text-white shadow-2xs"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
                 }`}
               >
                 {v.name}
@@ -178,19 +204,16 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
 
       {/* Custom Weight Input in KG */}
       {product.priceType === "weight" && isCustom && (
-        <div className="transition-all duration-300 bg-stone-50 p-3 sm:p-4 rounded-2xl border border-stone-200">
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="font-black text-stone-900 text-xs sm:text-sm flex items-center gap-1.5">
+        <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-semibold text-zinc-900 text-xs flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-primary" />
-              <span>Enter Weight in Kilograms (kg)</span>
-            </p>
-            <span className="text-[10px] sm:text-[11px] text-stone-500 font-bold bg-white px-2 py-0.5 rounded-md border border-stone-200">
-              In KG
+              <span>Enter Custom Weight (Kilograms)</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative w-36 sm:w-40">
+            <div className="relative w-36">
               <input
                 type="number"
                 min="0.1"
@@ -198,28 +221,30 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
                 placeholder="e.g. 1.5"
                 value={customKgStr}
                 onChange={handleCustomKgChange}
-                className="w-full py-2 pl-3 pr-9 rounded-xl border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-stone-900 font-black text-sm sm:text-base"
+                className="w-full h-9 pl-3 pr-9 rounded-lg border border-zinc-300 bg-white focus:outline-none focus:border-zinc-900 text-zinc-900 font-semibold text-sm tabular-nums"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 font-bold text-[11px] uppercase">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 font-medium text-xs">
                 kg
               </span>
             </div>
 
-            <div className="text-xs text-stone-500 font-medium">
-              = <span className="font-bold text-stone-800">{activeWeightGrams}g</span>
+            <div className="text-xs text-zinc-500 tabular-nums">
+              = <strong className="font-semibold text-zinc-800">{activeWeightGrams}g</strong>
             </div>
           </div>
         </div>
       )}
 
-      {/* Cut Preference (For weight-based fresh cuts) */}
+      {/* Butcher Cut Preference */}
       {product.priceType === "weight" && (
         <div>
-          <p className="font-extrabold text-stone-900 mb-2 text-xs uppercase tracking-wider flex items-center gap-1.5">
-            <span>Butcher Cut Preference</span>
-            <span className="text-[10px] text-primary lowercase font-semibold">(optional)</span>
-          </p>
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+          <label className="block font-semibold text-zinc-900 mb-2 text-xs uppercase tracking-wider">
+            Butcher Cut Preference{" "}
+            <span className="text-zinc-400 font-normal normal-case">
+              (optional)
+            </span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
             {CUT_OPTIONS.map((opt) => {
               const isSelected = cutPreference === opt.id;
               return (
@@ -227,17 +252,19 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
                   key={opt.id}
                   type="button"
                   onClick={() => setCutPreference(opt.id)}
-                  className={`p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                     isSelected
-                      ? "border-primary bg-red-50/70 text-stone-950 ring-1 ring-primary/40 shadow-xs"
-                      : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                      ? "border-primary bg-red-50/50 text-zinc-900"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
                   }`}
                 >
-                  <div className="font-bold text-xs sm:text-[13px] flex items-center justify-between">
+                  <div className="font-semibold text-xs sm:text-[13px] flex items-center justify-between">
                     <span>{opt.label}</span>
-                    {isSelected && <span className="text-primary text-xs">✓</span>}
+                    {isSelected && (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    )}
                   </div>
-                  <div className="text-[10px] text-stone-400 font-medium leading-tight mt-0.5">
+                  <div className="text-[11px] text-zinc-500 font-normal leading-tight mt-0.5">
                     {opt.sub}
                   </div>
                 </button>
@@ -247,72 +274,75 @@ export default function WeightSelector({ product, isAvailable }: WeightSelectorP
         </div>
       )}
 
-      {/* Price & Quantity Bar */}
-      <div className="flex items-center justify-between gap-3 bg-stone-50 p-3 sm:p-4 rounded-2xl border border-stone-200/80">
-        <div>
-          <span className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase tracking-wider block">
-            Subtotal Price
-          </span>
-          <span className="font-black text-primary text-lg sm:text-2xl tracking-tight">
-            Rs. {finalPrice}
-          </span>
-        </div>
-
-        {/* Quantity Controls */}
-        <div className="flex items-center border border-stone-200 rounded-xl bg-white shadow-2xs">
-          <button
-            type="button"
-            onClick={decreaseQty}
-            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-stone-600 hover:text-primary hover:bg-stone-50 rounded-l-xl transition-colors cursor-pointer"
-            aria-label="Decrease quantity"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-          <div className="w-9 h-8 sm:w-10 sm:h-9 flex items-center justify-center border-x border-stone-100 text-stone-900 font-black text-xs sm:text-sm">
-            {qty}
+      {/* Price, Quantity & Add to Cart Row */}
+      <div className="pt-2 space-y-3">
+        <div className="flex items-center justify-between gap-3 bg-zinc-50 p-3.5 rounded-xl border border-zinc-200">
+          <div>
+            <span className="text-[11px] font-medium text-zinc-500 block">
+              Selected Total
+            </span>
+            <span className="font-bold text-zinc-900 text-lg sm:text-xl tabular-nums">
+              Rs. {finalPrice}
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={increaseQty}
-            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-stone-600 hover:text-primary hover:bg-stone-50 rounded-r-xl transition-colors cursor-pointer"
-            aria-label="Increase quantity"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
 
-      {/* Add to Cart Button */}
-      <button
-        type="button"
-        onClick={handleAddToCart}
-        disabled={
-          !isAvailable ||
-          (product.priceType === "weight" && activeWeightGrams <= 0) ||
-          (product.priceType === "variant" && !selectedVariant) ||
-          isAdded
-        }
-        className={`w-full h-11 sm:h-12 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-98 ${
-          !isAvailable ||
-          (product.priceType === "weight" && activeWeightGrams <= 0) ||
-          (product.priceType === "variant" && !selectedVariant)
-            ? "bg-stone-200 text-stone-400 cursor-not-allowed"
-            : isAdded
-            ? "bg-emerald-600 text-white"
-            : "bg-primary text-white hover:bg-primary/90 shadow-primary/20 font-black uppercase text-xs sm:text-sm tracking-wider"
-        }`}
-      >
-        {isAdded ? (
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 stroke-[3]" />
-            <span>ADDED TO CART</span>
-          </span>
-        ) : !isAvailable ? (
-          "SOLD OUT"
-        ) : (
-          `ADD TO CART • Rs. ${finalPrice}`
-        )}
-      </button>
+          <div className="flex items-center border border-zinc-200 rounded-lg bg-white h-9">
+            <button
+              type="button"
+              onClick={decreaseQty}
+              className="w-9 h-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 rounded-l-lg transition-colors cursor-pointer"
+              aria-label="Decrease quantity"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-9 h-full flex items-center justify-center border-x border-zinc-200 text-zinc-900 font-semibold text-xs sm:text-sm tabular-nums">
+              {qty}
+            </div>
+            <button
+              type="button"
+              onClick={increaseQty}
+              className="w-9 h-full flex items-center justify-center text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 rounded-r-lg transition-colors cursor-pointer"
+              aria-label="Increase quantity"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={
+            !isAvailable ||
+            (product.priceType === "weight" && activeWeightGrams <= 0) ||
+            (product.priceType === "variant" && !selectedVariant) ||
+            isAdded
+          }
+          className={`w-full h-11 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer font-semibold text-sm ${
+            !isAvailable ||
+            (product.priceType === "weight" && activeWeightGrams <= 0) ||
+            (product.priceType === "variant" && !selectedVariant)
+              ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+              : isAdded
+              ? "bg-zinc-900 text-white"
+              : "bg-primary text-white hover:bg-primary-hover shadow-2xs"
+          }`}
+        >
+          {isAdded ? (
+            <>
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span>Added to Cart</span>
+            </>
+          ) : !isAvailable ? (
+            "Out of Stock"
+          ) : (
+            <>
+              <ShoppingBag className="w-4 h-4" />
+              <span>Add to Cart • Rs. {finalPrice}</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

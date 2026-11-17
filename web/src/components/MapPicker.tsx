@@ -1,8 +1,21 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Locate, MapPin, Loader2, Search, X, Navigation, Crosshair, AlertCircle, Check } from "lucide-react";
+import {
+  Locate,
+  MapPin,
+  Loader2,
+  Search,
+  X,
+  Navigation,
+  Crosshair,
+  AlertCircle,
+  Check,
+} from "lucide-react";
 
 interface MapPickerProps {
-  onAddressSelect: (address: string, coords: { lat: number; lng: number }) => void;
+  onAddressSelect: (
+    address: string,
+    coords: { lat: number; lng: number },
+  ) => void;
   initialAddress?: string;
   initialCoords?: { lat: number; lng: number } | null;
 }
@@ -15,28 +28,127 @@ interface SearchResult {
 }
 
 const POKHARA_LANDMARKS: SearchResult[] = [
-  { place_id: 9001, display_name: "Lakeside, Pokhara, Gandaki", lat: "28.2096", lon: "83.9585" },
-  { place_id: 9002, display_name: "Mahendrapool, Pokhara, Gandaki", lat: "28.2215", lon: "83.9875" },
-  { place_id: 9003, display_name: "Prithvi Chowk, Pokhara, Gandaki", lat: "28.2052", lon: "83.9888" },
-  { place_id: 9004, display_name: "Chipledhunga, Pokhara, Gandaki", lat: "28.2201", lon: "83.9845" },
-  { place_id: 9005, display_name: "Satmuhane, Lekhnath, Pokhara", lat: "28.1630", lon: "84.0750" },
-  { place_id: 9006, display_name: "Talchowk (Lekhnath), Pokhara", lat: "28.1725", lon: "84.0495" },
-  { place_id: 9007, display_name: "Bagar, Pokhara, Gandaki", lat: "28.2415", lon: "83.9820" },
-  { place_id: 9008, display_name: "Lamachaur, Pokhara, Gandaki", lat: "28.2612", lon: "83.9780" },
-  { place_id: 9009, display_name: "Birauta, Pokhara, Gandaki", lat: "28.1880", lon: "83.9710" },
-  { place_id: 9010, display_name: "Gharipatan (Airport Area), Pokhara", lat: "28.1920", lon: "83.9770" },
-  { place_id: 9011, display_name: "Amar Singh Chowk, Pokhara", lat: "28.2085", lon: "84.0020" },
-  { place_id: 9012, display_name: "Rambazar, Pokhara, Gandaki", lat: "28.1960", lon: "83.9950" },
-  { place_id: 9013, display_name: "Matepani (Kundahar), Pokhara", lat: "28.2140", lon: "84.0080" },
-  { place_id: 9014, display_name: "Naya Bazar, Pokhara, Gandaki", lat: "28.2150", lon: "83.9910" },
-  { place_id: 9015, display_name: "Sarangkot, Pokhara, Gandaki", lat: "28.2435", lon: "83.9485" },
-  { place_id: 9016, display_name: "Hemja, Pokhara, Gandaki", lat: "28.2750", lon: "83.9280" },
-  { place_id: 9017, display_name: "Malepatan, Pokhara, Gandaki", lat: "28.2160", lon: "83.9720" },
-  { place_id: 9018, display_name: "Srijana Chowk, Pokhara", lat: "28.2090", lon: "83.9780" },
-  { place_id: 9019, display_name: "Rastrabank Chowk, Pokhara", lat: "28.2020", lon: "83.9680" },
+  {
+    place_id: 9001,
+    display_name: "Lakeside, Pokhara, Gandaki",
+    lat: "28.2096",
+    lon: "83.9585",
+  },
+  {
+    place_id: 9002,
+    display_name: "Mahendrapool, Pokhara, Gandaki",
+    lat: "28.2215",
+    lon: "83.9875",
+  },
+  {
+    place_id: 9003,
+    display_name: "Prithvi Chowk, Pokhara, Gandaki",
+    lat: "28.2052",
+    lon: "83.9888",
+  },
+  {
+    place_id: 9004,
+    display_name: "Chipledhunga, Pokhara, Gandaki",
+    lat: "28.2201",
+    lon: "83.9845",
+  },
+  {
+    place_id: 9005,
+    display_name: "Satmuhane, Lekhnath, Pokhara",
+    lat: "28.1630",
+    lon: "84.0750",
+  },
+  {
+    place_id: 9006,
+    display_name: "Talchowk (Lekhnath), Pokhara",
+    lat: "28.1725",
+    lon: "84.0495",
+  },
+  {
+    place_id: 9007,
+    display_name: "Bagar, Pokhara, Gandaki",
+    lat: "28.2415",
+    lon: "83.9820",
+  },
+  {
+    place_id: 9008,
+    display_name: "Lamachaur, Pokhara, Gandaki",
+    lat: "28.2612",
+    lon: "83.9780",
+  },
+  {
+    place_id: 9009,
+    display_name: "Birauta, Pokhara, Gandaki",
+    lat: "28.1880",
+    lon: "83.9710",
+  },
+  {
+    place_id: 9010,
+    display_name: "Gharipatan (Airport Area), Pokhara",
+    lat: "28.1920",
+    lon: "83.9770",
+  },
+  {
+    place_id: 9011,
+    display_name: "Amar Singh Chowk, Pokhara",
+    lat: "28.2085",
+    lon: "84.0020",
+  },
+  {
+    place_id: 9012,
+    display_name: "Rambazar, Pokhara, Gandaki",
+    lat: "28.1960",
+    lon: "83.9950",
+  },
+  {
+    place_id: 9013,
+    display_name: "Matepani (Kundahar), Pokhara",
+    lat: "28.2140",
+    lon: "84.0080",
+  },
+  {
+    place_id: 9014,
+    display_name: "Naya Bazar, Pokhara, Gandaki",
+    lat: "28.2150",
+    lon: "83.9910",
+  },
+  {
+    place_id: 9015,
+    display_name: "Sarangkot, Pokhara, Gandaki",
+    lat: "28.2435",
+    lon: "83.9485",
+  },
+  {
+    place_id: 9016,
+    display_name: "Hemja, Pokhara, Gandaki",
+    lat: "28.2750",
+    lon: "83.9280",
+  },
+  {
+    place_id: 9017,
+    display_name: "Malepatan, Pokhara, Gandaki",
+    lat: "28.2160",
+    lon: "83.9720",
+  },
+  {
+    place_id: 9018,
+    display_name: "Srijana Chowk, Pokhara",
+    lat: "28.2090",
+    lon: "83.9780",
+  },
+  {
+    place_id: 9019,
+    display_name: "Rastrabank Chowk, Pokhara",
+    lat: "28.2020",
+    lon: "83.9680",
+  },
 ];
 
-export default function MapPicker({ onAddressSelect, initialAddress, initialCoords }: MapPickerProps) {
+export default function MapPicker({
+  onAddressSelect,
+  initialAddress,
+  initialCoords,
+}: MapPickerProps) {
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const accuracyCircleRef = useRef<any>(null);
@@ -44,10 +156,16 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
 
   const [isLocating, setIsLocating] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(initialAddress || "");
-  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(initialCoords || null);
+  const [currentCoords, setCurrentCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(initialCoords || null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [locationError, setLocationError] = useState<{ message: string; showHelp?: boolean } | null>(null);
+  const [locationError, setLocationError] = useState<{
+    message: string;
+    showHelp?: boolean;
+  } | null>(null);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,7 +183,7 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        { headers: { "Accept-Language": "en" } }
+        { headers: { "Accept-Language": "en" } },
       );
       const data = await res.json();
       const addr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -77,16 +195,24 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
     }
   }
 
-  const updateMarkerAndLocation = useCallback((L: any, lat: number, lng: number, zoomLevel = 17, skipReverseGeocode = false, presetAddress?: string) => {
-    if (!mapRef.current) return;
+  const updateMarkerAndLocation = useCallback(
+    (
+      L: any,
+      lat: number,
+      lng: number,
+      zoomLevel = 17,
+      skipReverseGeocode = false,
+      presetAddress?: string,
+    ) => {
+      if (!mapRef.current) return;
 
-    mapRef.current.setView([lat, lng], zoomLevel);
+      mapRef.current.setView([lat, lng], zoomLevel);
 
-    if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-    } else {
-      const icon = L.divIcon({
-        html: `<div style="
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lng]);
+      } else {
+        const icon = L.divIcon({
+          html: `<div style="
           width:36px;height:44px;
           display:flex;align-items:center;justify-content:center;
           filter: drop-shadow(0 3px 8px rgba(0,0,0,0.4));
@@ -96,38 +222,48 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
         </div>`,
-        className: "",
-        iconSize: [36, 44],
-        iconAnchor: [18, 44],
-      });
+          className: "",
+          iconSize: [36, 44],
+          iconAnchor: [18, 44],
+        });
 
-      markerRef.current = L.marker([lat, lng], { icon, draggable: true }).addTo(mapRef.current);
+        markerRef.current = L.marker([lat, lng], {
+          icon,
+          draggable: true,
+        }).addTo(mapRef.current);
 
-      markerRef.current.on("dragend", async () => {
-        const pos = markerRef.current.getLatLng();
-        setCurrentCoords({ lat: pos.lat, lng: pos.lng });
-        const addr = await reverseGeocode(pos.lat, pos.lng);
-        setSelectedAddress(addr);
-        onAddressSelect(addr, { lat: pos.lat, lng: pos.lng });
-      });
-    }
+        markerRef.current.on("dragend", async () => {
+          const pos = markerRef.current.getLatLng();
+          setCurrentCoords({ lat: pos.lat, lng: pos.lng });
+          const addr = await reverseGeocode(pos.lat, pos.lng);
+          setSelectedAddress(addr);
+          onAddressSelect(addr, { lat: pos.lat, lng: pos.lng });
+        });
+      }
 
-    setCurrentCoords({ lat, lng });
+      setCurrentCoords({ lat, lng });
 
-    if (presetAddress) {
-      setSelectedAddress(presetAddress);
-      onAddressSelect(presetAddress, { lat, lng });
-    } else if (!skipReverseGeocode) {
-      reverseGeocode(lat, lng).then((addr) => {
-        setSelectedAddress(addr);
-        onAddressSelect(addr, { lat, lng });
-      });
-    }
-  }, [onAddressSelect]);
+      if (presetAddress) {
+        setSelectedAddress(presetAddress);
+        onAddressSelect(presetAddress, { lat, lng });
+      } else if (!skipReverseGeocode) {
+        reverseGeocode(lat, lng).then((addr) => {
+          setSelectedAddress(addr);
+          onAddressSelect(addr, { lat, lng });
+        });
+      }
+    },
+    [onAddressSelect],
+  );
 
   // Initialize Leaflet Map
   useEffect(() => {
-    if (typeof window === "undefined" || !containerRef.current || mapRef.current) return;
+    if (
+      typeof window === "undefined" ||
+      !containerRef.current ||
+      mapRef.current
+    )
+      return;
 
     (async () => {
       const L = (await import("leaflet")).default;
@@ -144,12 +280,20 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
       });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
       }).addTo(mapRef.current);
 
       if (initialCoords) {
-        updateMarkerAndLocation(L, initialCoords.lat, initialCoords.lng, 17, true, initialAddress);
+        updateMarkerAndLocation(
+          L,
+          initialCoords.lat,
+          initialCoords.lng,
+          17,
+          true,
+          initialAddress,
+        );
       }
 
       mapRef.current.on("click", async (e: any) => {
@@ -186,7 +330,7 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
     // 1. Instant local landmark matching
     const qLower = query.toLowerCase().trim();
     const localMatches = POKHARA_LANDMARKS.filter((item) =>
-      item.display_name.toLowerCase().includes(qLower)
+      item.display_name.toLowerCase().includes(qLower),
     );
 
     setSearchResults(localMatches);
@@ -199,7 +343,7 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + " Nepal")}&countrycodes=np&limit=5`,
-            { headers: { "Accept-Language": "en" } }
+            { headers: { "Accept-Language": "en" } },
           );
           if (res.ok) {
             const data = await res.json();
@@ -239,7 +383,10 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
     setLocationError(null);
 
     if (!navigator.geolocation) {
-      setLocationError({ message: "Geolocation is not supported by your browser. Please search or tap on the map." });
+      setLocationError({
+        message:
+          "Geolocation is not supported by your browser. Please search or tap on the map.",
+      });
       return;
     }
 
@@ -269,7 +416,10 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
         setLocationError(null);
       } catch (err) {
         console.error("Reverse geocoding error:", err);
-        setLocationError({ message: "Located coordinates, but failed to fetch address text. You can drag the pin to adjust." });
+        setLocationError({
+          message:
+            "Located coordinates, but failed to fetch address text. You can drag the pin to adjust.",
+        });
       } finally {
         setIsLocating(false);
       }
@@ -279,7 +429,10 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
     navigator.geolocation.getCurrentPosition(
       onLocationSuccess,
       (highAccErr) => {
-        console.warn("High accuracy GPS failed, falling back to network positioning...", highAccErr);
+        console.warn(
+          "High accuracy GPS failed, falling back to network positioning...",
+          highAccErr,
+        );
         // Fallback attempt: Standard network/wifi positioning
         navigator.geolocation.getCurrentPosition(
           onLocationSuccess,
@@ -288,17 +441,21 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
             setIsLocating(false);
             if (fallbackErr.code === fallbackErr.PERMISSION_DENIED) {
               setLocationError({
-                message: "Location access denied. Please allow location access in your browser settings, or use the search bar / tap on the map.",
+                message:
+                  "Location access denied. Please allow location access in your browser settings, or use the search bar / tap on the map.",
                 showHelp: true,
               });
             } else {
-              setLocationError({ message: "Could not detect exact GPS signal. Use the search bar above or tap your location on the map." });
+              setLocationError({
+                message:
+                  "Could not detect exact GPS signal. Use the search bar above or tap your location on the map.",
+              });
             }
           },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
         );
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   };
 
@@ -354,7 +511,10 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
       </div>
 
       {/* 2. Interactive Map Box */}
-      <div className="relative rounded-2xl overflow-hidden border border-stone-200 shadow-sm isolate" style={{ height: "300px" }}>
+      <div
+        className="relative rounded-2xl overflow-hidden border border-stone-200 shadow-sm isolate"
+        style={{ height: "300px" }}
+      >
         <div ref={containerRef} className="w-full h-full" />
 
         {/* Action button: Locate Me */}
@@ -379,7 +539,9 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
         {currentCoords && (
           <div className="absolute bottom-3 left-3 z-[1000] bg-stone-900/85 backdrop-blur-xs text-white px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border border-white/15 pointer-events-none flex items-center gap-1.5 shadow-md">
             <Crosshair className="w-3 h-3 text-red-400" />
-            <span>{currentCoords.lat.toFixed(5)}, {currentCoords.lng.toFixed(5)}</span>
+            <span>
+              {currentCoords.lat.toFixed(5)}, {currentCoords.lng.toFixed(5)}
+            </span>
           </div>
         )}
 
@@ -399,13 +561,17 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
         <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
           <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-xs font-bold text-amber-800 leading-snug">{locationError.message}</p>
+            <p className="text-xs font-bold text-amber-800 leading-snug">
+              {locationError.message}
+            </p>
           </div>
           <button
             type="button"
             onClick={() => setLocationError(null)}
             className="text-amber-500 hover:text-amber-700 font-bold text-sm shrink-0 cursor-pointer leading-none"
-          >✕</button>
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -413,7 +579,10 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
       {!selectedAddress && isMapReady && !locationError && (
         <p className="flex items-center gap-2 text-xs text-stone-500 font-semibold">
           <MapPin className="w-4 h-4 text-primary shrink-0" />
-          Search above, tap on the map, or click <strong>"My Location"</strong> to pin your delivery address.
+          Search above, tap on the map, or click <strong>
+            "My Location"
+          </strong>{" "}
+          to pin your delivery address.
         </p>
       )}
 
@@ -423,7 +592,9 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
           <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Selected Delivery Pin</p>
+              <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">
+                Selected Delivery Pin
+              </p>
               {currentCoords && (
                 <span className="text-[10px] font-mono font-bold text-stone-500">
                   {currentCoords.lat.toFixed(5)}, {currentCoords.lng.toFixed(5)}
@@ -432,7 +603,8 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
             </div>
             {isGeocoding ? (
               <div className="flex items-center gap-2 text-xs text-stone-500 font-bold">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> Resolving address...
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />{" "}
+                Resolving address...
               </div>
             ) : (
               <p className="text-xs sm:text-sm font-bold text-stone-900 leading-snug break-words">
@@ -440,7 +612,8 @@ export default function MapPicker({ onAddressSelect, initialAddress, initialCoor
               </p>
             )}
             <p className="text-[10px] text-stone-400 font-medium mt-1">
-              💡 Tip: You can drag the red pin directly onto your doorstep or building to fine-tune.
+              Tip: You can drag the red pin directly onto your doorstep or
+              building to fine-tune.
             </p>
           </div>
         </div>

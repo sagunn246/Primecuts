@@ -65,8 +65,8 @@ export default function PrivacyPolicyPage() {
           {/* Information We Collect */}
           <section>
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
-                <Eye className="w-5 h-5 text-amber-600" />
+              <div className="w-9 h-9 bg-zinc-100 rounded-xl flex items-center justify-center">
+                <Eye className="w-5 h-5 text-primary" />
               </div>
               <h2 className="text-xl font-black text-stone-900">
                 Information We Collect
@@ -149,8 +149,8 @@ export default function PrivacyPolicyPage() {
           {/* Cookies */}
           <section>
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
-                <Cookie className="w-5 h-5 text-amber-600" />
+              <div className="w-9 h-9 bg-zinc-100 rounded-xl flex items-center justify-center">
+                <Cookie className="w-5 h-5 text-primary" />
               </div>
               <h2 className="text-xl font-black text-stone-900">Cookies</h2>
             </div>

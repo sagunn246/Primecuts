@@ -1,34 +1,30 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   Truck,
-  Star,
-  Award,
   MapPin,
   Scale,
-  ShoppingCart,
-  ShoppingBag,
-  ClipboardList,
-  Bike,
-  Phone,
   Search,
   X,
   ChevronDown,
-  Sparkles,
-  Flame,
-  Smartphone,
-  CheckCircle2,
-  Download,
+  ShieldCheck,
+  Clock,
+  Utensils,
+  PackageCheck,
+  ShoppingBag,
+  ShoppingCart,
+  ClipboardList,
+  Bike,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import ShopShowcaseSection from "../components/ShopShowcaseSection";
 import SEO from "../components/SEO";
-import { usePWA } from "../context/PWAContext";
+import { useStoreStatus } from "../context/StoreStatusContext";
 import { Product, Category } from "@/types/types";
 
 export default function HomePage() {
-  const { isInstalled, installApp } = usePWA();
+  const { freeDeliveryThreshold } = useStoreStatus();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get("category") || "";
   const initialQuery = searchParams.get("q") || "";
@@ -38,18 +34,12 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Search & Filter state
   const [selectedCategory, setSelectedCategory] =
     useState<string>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [sortOption, setSortOption] = useState<string>(initialSort);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [suggestions, setSuggestions] = useState<
-    { name: string; slug: string }[]
-  >([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const searchRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   const sortOptions = [
@@ -59,26 +49,19 @@ export default function HomePage() {
     { value: "name-asc", label: "Name: A to Z" },
   ];
 
-  // Synchronize state with URL parameters if changed externally
   useEffect(() => {
-    if (searchParams.has("category")) {
-      setSelectedCategory(searchParams.get("category") || "");
-    }
-    if (searchParams.has("q")) {
-      setSearchQuery(searchParams.get("q") || "");
-    }
+    setSelectedCategory(searchParams.get("category") || "");
+    setSearchQuery(searchParams.get("q") || "");
   }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
 
-    // Clear any legacy sessionStorage cache to ensure 100% live data from database
     try {
       sessionStorage.removeItem("prime_cached_products");
       sessionStorage.removeItem("prime_cached_categories");
-    } catch { }
+    } catch {}
 
-    // Live Dynamic Fetch direct from API & Database
     async function loadData() {
       try {
         setLoading(true);
@@ -108,7 +91,7 @@ export default function HomePage() {
       } catch (err) {
         console.error(
           "Failed to load products or categories from database API",
-          err,
+          err
         );
         if (isMounted) {
           setProducts([]);
@@ -127,15 +110,8 @@ export default function HomePage() {
     };
   }, []);
 
-  // Close suggestions and sort dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
       if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
         setShowSortDropdown(false);
       }
@@ -143,22 +119,6 @@ export default function HomePage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSearchChange = (val: string) => {
-    setSearchQuery(val);
-    if (val.trim().length > 0) {
-      const matched = products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(val.toLowerCase()) ||
-          p.category?.toLowerCase().includes(val.toLowerCase()),
-      );
-      setSuggestions(matched.slice(0, 5));
-      setShowSuggestions(true);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
 
   const handleCategorySelect = (categoryName: string) => {
     setSelectedCategory(categoryName);
@@ -171,15 +131,24 @@ export default function HomePage() {
     setSearchParams(newParams, { replace: true });
   };
 
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    const newParams = new URLSearchParams(searchParams);
+    if (val.trim()) {
+      newParams.set("q", val);
+    } else {
+      newParams.delete("q");
+    }
+    setSearchParams(newParams, { replace: true });
+  };
+
   const clearSearch = () => {
     setSearchQuery("");
-    setShowSuggestions(false);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("q");
     setSearchParams(newParams, { replace: true });
   };
 
-  // Filter and Sort Products
   const filteredProducts = products.filter((product) => {
     const matchesCategory =
       !selectedCategory ||
@@ -205,7 +174,6 @@ export default function HomePage() {
     if (sortOption === "name-asc") {
       return a.name.localeCompare(b.name);
     }
-    // "popular": featured first, then available, then ID
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
     return 0;
@@ -215,139 +183,119 @@ export default function HomePage() {
     sortOptions.find((o) => o.value === sortOption)?.label || "Popular Cuts";
 
   return (
-    <div className="flex flex-col bg-white">
+    <div className="flex flex-col bg-white md:bg-[#f8f8f9]">
       <SEO
         title="Fresh, Clean & Quality Meat in Pokhara"
         description="Locally sourced castrated goat (khasi), boka, giriraj local chicken, broiler, fresh eggs, sausages, and momos cleanly prepped at Khudi Chowk, Pokhara-30. Order fresh meat online with fast home delivery."
         keywords="Prime Cuts Pokhara, Khasi meat Pokhara, खसीको मासु पोखरा, fresh butcher house, local chicken delivery, broiler chicken Pokhara, buff meat, pork cuts, sausages Pokhara"
         url="/"
       />
-      {/* 1. HERO SECTION - IMMERSIVE ARTISANAL BUTCHER SHOWCASE (DESKTOP ONLY) */}
-      <section className="hidden md:flex relative sm:min-h-[360px] lg:min-h-[545px] bg-black text-white overflow-hidden items-center mx-3 sm:mx-0 mt-2 sm:mt-0 rounded-2xl sm:rounded-none shadow-xl">
-        {/* Actual Image Background */}
+
+      {/* 1. STOREFRONT HERO BANNER (DESKTOP ONLY — Mobile opens directly to catalog) */}
+      <section className="hidden md:block relative bg-zinc-900 text-white overflow-hidden border-b border-zinc-800">
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <picture className="w-full h-full block">
-            <source
-              media="(min-width: 768px)"
-              srcSet="/images/hero_bg_desktop.jpg"
-            />
-            <img
-              src="/images/hero_bg_mobile.jpg"
-              alt="Artisanal Prime Meat Butcher House"
-              className="w-full h-full object-cover object-right md:object-[75%_center]"
-            />
-          </picture>
+          <img
+            src="/images/hero_bg_desktop.jpg"
+            alt="Prime Cuts Butcher House Pokhara"
+            className="w-full h-full object-cover object-[75%_center] opacity-80"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-zinc-950/20" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-9 lg:py-11 w-full">
-          <div className="max-w-2xl flex flex-col items-start text-left">
-            {/* Location Tag */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs font-semibold text-stone-200 mb-2 sm:mb-2.5">
-              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
-              <span>Khudi Chowk, Pokhara-30</span>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20 w-full">
+          <div className="max-w-xl flex flex-col items-start text-left">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 border border-white/15 text-xs font-medium text-zinc-200 mb-3">
+              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Khudi Chowk, Pokhara-30 • Fresh Daily Cuts</span>
             </div>
 
-            {/* Main Headline (Desktop: Full rich | Mobile: Minimal) */}
-            <h1 className="text-xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] mb-2 sm:mb-3 text-white">
-              <span className="sm:hidden">
-                Fresh Meat <br />
-                <span className="text-primary">Cut Daily to Your Order</span>
-              </span>
-              <span className="hidden sm:inline">
-                Fresh, Clean & Delicious Meat <br />
-                <span className="text-primary">Cut Daily to Your Order</span>
-              </span>
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.15] text-white mb-3">
+              Farm-Fresh Meat,{" "}
+              <span className="text-primary">Cut Daily to Your Order.</span>
             </h1>
 
-            {/* Subheading (Desktop: Full detailed | Mobile: Minimal) */}
-            <p className="sm:hidden text-xs text-stone-300 mb-3.5 max-w-lg font-normal leading-relaxed">
-              100% hygienic goat, chicken, buff & sausages cleanly prepped and
-              delivered fresh.
-            </p>
-            <p className="hidden sm:block text-sm md:text-base text-stone-200 mb-6 max-w-xl font-normal leading-relaxed">
-              Locally sourced castrated goat (khasi), boka, giriraj local
-              chicken, broiler, fresh eggs, sausages, and momos cleanly prepped
-              with uncompromised quality.
+            <p className="text-base text-zinc-300 mb-6 max-w-lg font-normal leading-relaxed">
+              Locally sourced castrated goat (khasi), Giriraj & broiler chicken,
+              buff, pork, sausages, and momos — hygienically prepared every
+              morning for counter pickup or doorstep delivery.
             </p>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <a
                 href="#shop-cuts"
-                className="px-4 sm:px-6 py-2 sm:py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl transition-all text-xs sm:text-sm tracking-wide inline-flex items-center gap-1.5 cursor-pointer active:scale-95 group shadow-md shadow-primary/20"
+                className="h-11 px-5 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors text-sm inline-flex items-center gap-2 cursor-pointer shadow-xs"
               >
-                <span>Order Now</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span>Shop All Cuts</span>
+                <ArrowRight className="w-4 h-4" />
               </a>
 
-              {isInstalled ? (
-                <div className="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-emerald-950/60 backdrop-blur-md text-emerald-400 font-bold rounded-xl text-xs sm:text-sm inline-flex items-center gap-1.5 border border-emerald-500/30">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>App Installed</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={installApp}
-                  className="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-bold rounded-xl transition-all text-xs sm:text-sm inline-flex items-center gap-1.5 border border-white/20 cursor-pointer active:scale-95 shadow-xs"
-                >
-                  <Smartphone className="w-3.5 h-3.5 text-primary" />
-                  <span>Install App</span>
-                </button>
-              )}
+              <a
+                href="#butcher-store"
+                className="h-11 px-4 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-lg transition-colors text-sm inline-flex items-center gap-1.5 border border-white/15 cursor-pointer"
+              >
+                <span>Our Butcher Shop</span>
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. TRUST COMMITMENT / FEATURES BAR - DESKTOP ONLY */}
-      <section className="hidden sm:block bg-[#0d0d0d] border border-[#1f1f1f] sm:border-x-0 sm:rounded-none sm:mx-0 sm:mt-0 py-4 sm:py-5 relative z-10 text-white shadow-xl overflow-hidden">
+      {/* 2. SERVICE STANDARDS STRIP (DESKTOP ONLY) */}
+      <section className="hidden md:block bg-white border-b border-zinc-200 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-center lg:divide-x lg:divide-neutral-800">
-            <div className="flex items-center gap-3 sm:gap-3.5 lg:pr-5">
-              <Star className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0 stroke-[1.8]" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-bold leading-tight">
-                  Freshly Made
+          <div className="grid grid-cols-4 gap-6 divide-x divide-zinc-200">
+            <div className="flex items-center gap-3 pr-4">
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200/80 flex items-center justify-center text-primary shrink-0">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-zinc-900 text-sm font-semibold leading-tight truncate">
+                  Fresh Morning Cut
                 </p>
-                <p className="text-neutral-400 text-[11px] sm:text-xs mt-0.5">
-                  Hygienic & Clean
+                <p className="text-zinc-500 text-xs mt-0.5 truncate">
+                  Prepared daily from 7:00 AM
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-3.5 lg:px-5">
-              <Award className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0 stroke-[1.8]" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-bold leading-tight">
-                  Quality Ingredients
+            <div className="flex items-center gap-3 px-4">
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200/80 flex items-center justify-center text-primary shrink-0">
+                <Scale className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-zinc-900 text-sm font-semibold leading-tight truncate">
+                  Exact Digital Weight
                 </p>
-                <p className="text-neutral-400 text-[11px] sm:text-xs mt-0.5">
-                  100% Trusted
+                <p className="text-zinc-500 text-xs mt-0.5 truncate">
+                  250g, 500g, 1kg or custom
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-3.5 lg:px-5">
-              <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0 stroke-[1.8]" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-bold leading-tight">
-                  Fast Delivery
+            <div className="flex items-center gap-3 px-4">
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200/80 flex items-center justify-center text-primary shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-zinc-900 text-sm font-semibold leading-tight truncate">
+                  100% Hygienic Prep
                 </p>
-                <p className="text-neutral-400 text-[11px] sm:text-xs mt-0.5">
-                  On Time
+                <p className="text-zinc-500 text-xs mt-0.5 truncate">
+                  Clean food-grade packaging
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-3.5 lg:pl-5">
-              <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0 stroke-[1.8]" />
-              <div>
-                <p className="text-white text-xs sm:text-sm font-bold leading-tight">
-                  Pick-up Available
+            <div className="flex items-center gap-3 pl-4">
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200/80 flex items-center justify-center text-primary shrink-0">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-zinc-900 text-sm font-semibold leading-tight truncate">
+                  Fast Doorstep Delivery
                 </p>
-                <p className="text-neutral-400 text-[11px] sm:text-xs mt-0.5">
-                  Visit Our Shop
+                <p className="text-zinc-500 text-xs mt-0.5 truncate">
+                  Free above Rs. {freeDeliveryThreshold}
                 </p>
               </div>
             </div>
@@ -355,159 +303,64 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. COMPLETE MEAT CATALOG WITH SEARCH & FILTERS ON HOME PAGE */}
+      {/* 3. MAIN PRODUCT CATALOG (MOBILE APP & DESKTOP) */}
       <section
         id="shop-cuts"
-        className="pt-3 pb-8 sm:py-14 max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 w-full scroll-mt-20"
+        className="pt-3.5 pb-8 sm:py-12 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full scroll-mt-20"
       >
-        {/* Section Header */}
-        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-6 border-b border-stone-100 pb-3 sm:pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-primary bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
-                Fresh Cuts & Meats
-              </span>
-              <span className="text-stone-400 text-xs font-semibold">
-                ({sortedProducts.length} items available)
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-stone-900 tracking-tight mt-1">
-              Choose Your Fresh Cut
+        {/* Catalog Header Row: Title on Left, Sort Control on Right */}
+        <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-zinc-100 md:border-zinc-200">
+          <div className="min-w-0">
+            <h2 className="text-[17px] sm:text-2xl font-bold text-zinc-900 tracking-tight leading-snug truncate">
+              {selectedCategory ? selectedCategory : "Choose Your Fresh Cut"}
             </h2>
+            <p className="text-[11px] sm:text-xs text-zinc-500 font-medium mt-0.5 tabular-nums">
+              {sortedProducts.length}{" "}
+              {sortedProducts.length === 1 ? "item" : "items"} available • Cut
+              fresh daily
+            </p>
           </div>
 
-          {/* Small Install App Button for Mobile (sm:hidden) */}
-          <div className="sm:hidden shrink-0">
-            {isInstalled ? (
-              <div className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold shadow-2xs">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Installed</span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={installApp}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 active:scale-95 text-white text-[11px] font-black tracking-tight shadow-sm cursor-pointer"
-              >
-                <Smartphone className="w-3.5 h-3.5 text-primary" />
-                <span>Install App</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* 🔍 SEARCH BAR & LIVE AUTOCOMPLETE (DESKTOP ONLY - Mobile has integrated app search in top header) */}
-        <div className="hidden md:block space-y-4 mb-6 sm:mb-8">
-          <div className="relative w-full" ref={searchRef}>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-stone-400 pointer-events-none" />
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Desktop Inline Filter Input */}
+            <div className="hidden md:block relative w-60">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search fresh cuts (chicken, mutton, buff, pork, sausages...)"
+                placeholder="Filter cuts by name..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                onFocus={() => {
-                  if (searchQuery.trim().length > 0 && suggestions.length > 0) {
-                    setShowSuggestions(true);
-                  }
-                }}
-                className="w-full bg-stone-50 hover:bg-stone-100/70 focus:bg-white text-stone-900 placeholder-stone-400 pl-11 sm:pl-12 pr-10 py-3 sm:py-3.5 rounded-2xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary border border-stone-200 shadow-xs transition-all"
+                className="w-full h-9 pl-9 pr-8 bg-white text-zinc-900 placeholder-zinc-400 rounded-lg text-xs font-medium border border-zinc-200 focus:border-zinc-900 focus:outline-none transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-200 transition-colors cursor-pointer"
-                  title="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                  title="Clear filter"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Live Autocomplete Suggestions Dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-stone-200 rounded-2xl shadow-2xl z-50 overflow-hidden text-xs sm:text-sm animate-in fade-in">
-                {suggestions.map((suggestion) => (
-                  <Link
-                    key={suggestion.slug}
-                    to={`/product/${suggestion.slug}`}
-                    className="flex items-center justify-between px-4 py-3 text-stone-800 font-bold hover:bg-stone-50 border-b border-stone-100 last:border-0 transition-colors"
-                    onClick={() => setShowSuggestions(false)}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Search className="w-4 h-4 text-primary" />
-                      <span>{suggestion.name}</span>
-                    </div>
-                    <span className="text-[11px] text-stone-400 font-medium">
-                      View Cut →
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 🏷️ HORIZONTAL CATEGORY PILLS & SORT DROPDOWN */}
-        <div className="mb-5 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Category Filter Pills (Smooth Horizontal Momentum Scroll on Mobile & Desktop) */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar flex-nowrap smooth-scroll-x overscroll-x-contain select-none">
-              <button
-                type="button"
-                onClick={() => handleCategorySelect("")}
-                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-transform border shrink-0 whitespace-nowrap cursor-pointer select-none active:scale-95 ${selectedCategory === ""
-                    ? "bg-primary border-primary text-white shadow-md shadow-primary/25"
-                    : "bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-100"
-                  }`}
-              >
-                All Meats ({products.length})
-              </button>
-
-              {categories.map((cat) => {
-                const catName = typeof cat === "string" ? cat : cat.name;
-                const isSelected =
-                  selectedCategory.toLowerCase() === catName.toLowerCase();
-                const count = products.filter(
-                  (p) => p.category?.toLowerCase() === catName.toLowerCase(),
-                ).length;
-
-                return (
-                  <button
-                    key={catName}
-                    type="button"
-                    onClick={() => handleCategorySelect(catName)}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-transform border shrink-0 whitespace-nowrap cursor-pointer select-none active:scale-95 ${isSelected
-                        ? "bg-primary border-primary text-white shadow-md shadow-primary/25"
-                        : "bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-100"
-                      }`}
-                  >
-                    {catName} {count > 0 && `(${count})`}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Sort Dropdown */}
-            <div
-              className="relative shrink-0 self-end sm:self-auto"
-              ref={sortRef}
-            >
+            {/* Sort Dropdown (Aligned cleanly in Header Row on Mobile & Desktop) */}
+            <div className="relative shrink-0" ref={sortRef}>
               <button
                 type="button"
                 onClick={() => setShowSortDropdown((prev) => !prev)}
-                className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs font-bold text-stone-700 hover:border-stone-300 transition-colors shadow-2xs cursor-pointer"
+                className="h-8 sm:h-9 flex items-center gap-1.5 bg-zinc-100/90 md:bg-white border border-zinc-200 hover:border-zinc-300 rounded-lg px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold text-zinc-800 transition-colors cursor-pointer"
               >
                 <span>Sort: {currentSortLabel}</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-stone-500 transition-transform duration-200 ${showSortDropdown ? "rotate-180" : ""
-                    }`}
+                  className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-150 ${
+                    showSortDropdown ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
               {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-1.5 bg-white border border-stone-200 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[190px] animate-in fade-in">
+                <div className="absolute right-0 top-full mt-1.5 bg-white border border-zinc-200 rounded-xl shadow-lg z-50 overflow-hidden min-w-[175px]">
                   {sortOptions.map((opt) => (
                     <button
                       key={opt.value}
@@ -516,12 +369,13 @@ export default function HomePage() {
                         setSortOption(opt.value);
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer ${sortOption === opt.value
-                          ? "bg-primary text-white"
-                          : "text-stone-700 hover:bg-stone-50"
-                        }`}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                        sortOption === opt.value
+                          ? "bg-zinc-900 text-white font-semibold"
+                          : "text-zinc-700 hover:bg-zinc-50"
+                      }`}
                     >
-                      {opt.label}
+                      <span>{opt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -530,14 +384,68 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 🥩 ALL PRODUCTS GRID */}
+        {/* Horizontal Category Filter Pills */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar flex-nowrap smooth-scroll-x overscroll-x-contain select-none">
+            <button
+              type="button"
+              onClick={() => handleCategorySelect("")}
+              className={`h-8 sm:h-9 px-3 sm:px-3.5 rounded-lg text-xs font-semibold transition-all border shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
+                selectedCategory === ""
+                  ? "bg-primary border-primary text-white shadow-2xs"
+                  : "bg-zinc-100/80 md:bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+              }`}
+            >
+              All Meats ({products.length})
+            </button>
+
+            {categories.map((cat) => {
+              const catName = typeof cat === "string" ? cat : cat.name;
+              const isSelected =
+                selectedCategory.toLowerCase() === catName.toLowerCase();
+              const count = products.filter(
+                (p) => p.category?.toLowerCase() === catName.toLowerCase()
+              ).length;
+
+              return (
+                <button
+                  key={catName}
+                  type="button"
+                  onClick={() => handleCategorySelect(catName)}
+                  className={`h-8 sm:h-9 px-3 sm:px-3.5 rounded-lg text-xs font-semibold transition-all border shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
+                    isSelected
+                      ? "bg-primary border-primary text-white shadow-2xs"
+                      : "bg-zinc-100/80 md:bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                  }`}
+                >
+                  {catName} {count > 0 && `(${count})`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Products Grid: 2 Columns on Mobile App for Clean Readability, 3 on Tablet, 4 on Desktop */}
         {loading ? (
-          <div className="py-20 text-center text-stone-400 font-medium">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            Loading fresh meat cuts...
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl border border-zinc-200 overflow-hidden h-68 animate-pulse flex flex-col"
+              >
+                <div className="aspect-[4/3] bg-zinc-200/70" />
+                <div className="p-3 space-y-2.5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <div className="h-3.5 bg-zinc-200 rounded w-3/4" />
+                    <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                  </div>
+                  <div className="h-8 bg-zinc-100 rounded-lg" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : sortedProducts.length > 0 ? (
-          <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-2 sm:gap-3.5 lg:gap-3.5 xl:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
             {sortedProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -554,161 +462,137 @@ export default function HomePage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-stone-50 rounded-3xl border border-stone-200 p-8 max-w-lg mx-auto space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-stone-200/80 text-stone-500 flex items-center justify-center mx-auto">
-              <Search className="w-6 h-6" />
+          <div className="text-center py-14 bg-zinc-50 rounded-xl border border-zinc-200 p-6 max-w-md mx-auto space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-white text-zinc-500 flex items-center justify-center mx-auto border border-zinc-200">
+              <Search className="w-5 h-5" />
             </div>
-            <h3 className="text-base sm:text-lg font-black text-stone-900">
+            <h3 className="text-base font-bold text-zinc-900">
               No meat cuts found
             </h3>
-            <p className="text-xs text-stone-500 max-w-xs mx-auto">
+            <p className="text-xs text-zinc-500 leading-relaxed">
               {searchQuery || selectedCategory
-                ? "No items match your search or filter. Try clearing filters to see all available meat cuts."
-                : "Our butchers are currently updating the catalog. Please check back shortly!"}
+                ? "No items match your current filter. Reset filters to view all available cuts."
+                : "Our butchers are updating today's catalog. Please check back shortly."}
             </p>
             {(searchQuery || selectedCategory) && (
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedCategory("");
-                  setSearchQuery("");
+                  handleCategorySelect("");
+                  clearSearch();
                 }}
-                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-sm hover:bg-primary-hover transition-colors cursor-pointer"
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
               >
-                Reset All Filters
+                Reset Filters
               </button>
             )}
           </div>
         )}
       </section>
 
-      {/* 4. AUTHENTIC SHOP SHOWCASE & INFORMATION SECTION */}
+      {/* 4. PHYSICAL STORE & OUTLET SHOWCASE */}
       <ShopShowcaseSection />
 
-      {/* 5. HOW IT WORKS - RED, WHITE & BLACK THEME */}
-      <section className="bg-[#fbf9f5] pt-0 sm:pt-6">
-        <div className="bg-[#121214] rounded-t-[1.5rem] sm:rounded-t-[2.5rem] border-t border-[#24242a] text-white pt-5 pb-3 sm:py-16 shadow-2xl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* ==================== MOBILE VIEW (Ultra Compact 5-Step Flow) ==================== */}
-            <div className="sm:hidden text-center">
-              <span className="text-primary font-bold text-[10px] uppercase tracking-widest block mb-0.5">
-                HOW TO ORDER
-              </span>
-              <h2 className="text-sm font-black uppercase tracking-tight text-white mb-3">
-                Order Favourites By Weight
-              </h2>
+      {/* 5. HOW TO ORDER / PREPARATION STANDARDS */}
+      <section className="bg-zinc-50 md:bg-zinc-100/70 md:border-t md:border-zinc-200 pt-2 sm:py-14">
+        {/* Mobile App View: Compact 5-Step Flow Attached to Dark Footer */}
+        <div className="md:hidden bg-[#141416] rounded-t-2xl border-t border-zinc-800 text-white pt-5 pb-3 px-4">
+          <div className="text-center mb-3.5">
+            <span className="text-primary font-bold text-[10px] uppercase tracking-widest block">
+              Simple Ordering
+            </span>
+            <h2 className="text-xs font-bold uppercase tracking-wide text-white mt-0.5">
+              Order Fresh Cuts by Weight
+            </h2>
+          </div>
 
-              {/* 5 Compact Steps in Single Line / Grid */}
-              <div className="grid grid-cols-5 gap-1 items-start">
-                <div className="flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center mb-1 border border-white/10">
-                    <ShoppingBag className="w-4 h-4 text-primary" />
+          <div className="grid grid-cols-5 gap-1 items-start max-w-md mx-auto">
+            {[
+              { icon: ShoppingBag, label: "Select" },
+              { icon: Scale, label: "Weight" },
+              { icon: ShoppingCart, label: "Cart" },
+              { icon: ClipboardList, label: "Order" },
+              { icon: Bike, label: "Deliver" },
+            ].map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <div key={i} className="flex flex-col items-center">
+                  <div className="w-9 h-9 rounded-xl bg-zinc-800/90 text-white flex items-center justify-center mb-1.5 border border-zinc-700/80">
+                    <Icon className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="font-bold text-[9px] text-stone-300 leading-tight text-center">
-                    Product
+                  <span className="font-semibold text-[10px] text-zinc-300 leading-tight text-center">
+                    {step.label}
                   </span>
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                <div className="flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center mb-1 border border-white/10">
-                    <Scale className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-bold text-[9px] text-stone-300 leading-tight text-center">
-                    Weight
-                  </span>
-                </div>
+        {/* Desktop View: 3-Column Butcher Standards */}
+        <div className="hidden md:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mb-8">
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-1.5">
+              Our Butcher Standards
+            </span>
+            <h2 className="text-2xl font-bold text-zinc-900 tracking-tight">
+              Prepared Fresh to Your Exact Specification
+            </h2>
+            <p className="text-zinc-600 text-sm mt-1.5 leading-relaxed">
+              Every order at Prime Cuts is portioned fresh from the morning block according to your recipe needs.
+            </p>
+          </div>
 
-                <div className="flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center mb-1 border border-white/10">
-                    <ShoppingCart className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-bold text-[9px] text-stone-300 leading-tight text-center">
-                    Add Cart
-                  </span>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-xl border border-zinc-200/90">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-zinc-100 border border-zinc-200 text-primary flex items-center justify-center">
+                  <Utensils className="w-5 h-5" />
                 </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center mb-1 border border-white/10">
-                    <ClipboardList className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-bold text-[9px] text-stone-300 leading-tight text-center">
-                    Order
-                  </span>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center mb-1 border border-white/10">
-                    <Bike className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-bold text-[9px] text-stone-300 leading-tight text-center">
-                    Deliver
-                  </span>
-                </div>
+                <span className="text-xs font-bold text-zinc-400 tabular-nums">
+                  01
+                </span>
               </div>
+              <h3 className="text-base font-bold text-zinc-900 mb-1.5">
+                Custom Cut Preferences
+              </h3>
+              <p className="text-sm text-zinc-600 leading-relaxed">
+                Choose medium curry cuts, small soup (jhol) pieces, large biryani cuts, or lean boneless portions on any product page.
+              </p>
             </div>
 
-            {/* ==================== DESKTOP VIEW (5 Connected Detailed Cards) ==================== */}
-            <div className="hidden sm:block">
-              {/* Section Header */}
-              <div className="text-center max-w-xl mx-auto mb-10 sm:mb-12">
-                <span className="text-primary font-bold text-xs uppercase tracking-widest block mb-2">
-                  HOW IT WORKS
+            <div className="bg-white p-6 rounded-xl border border-zinc-200/90">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-zinc-100 border border-zinc-200 text-primary flex items-center justify-center">
+                  <PackageCheck className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold text-zinc-400 tabular-nums">
+                  02
                 </span>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-                  From the Butcher Block to Your Table
-                </h2>
-                <p className="text-stone-400 text-xs sm:text-sm mt-2">
-                  Simple, transparent 5-step process from our shop to your home.
-                </p>
               </div>
+              <h3 className="text-base font-bold text-zinc-900 mb-1.5">
+                Sanitary Food-Grade Sealing
+              </h3>
+              <p className="text-sm text-zinc-600 leading-relaxed">
+                Weighing is done on calibrated digital scales and packed in clean, food-safe pouches with zero chemical preservatives.
+              </p>
+            </div>
 
-              {/* 5-Step Connected Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
-                {[
-                  {
-                    step: "1",
-                    title: "Select Your Meat",
-                    desc: "Choose from fresh goat, chicken, buff, pork, or sausages.",
-                  },
-                  {
-                    step: "2",
-                    title: "Pick Cut & Weight",
-                    desc: "Choose curry cut, boneless, mince, or custom grams.",
-                  },
-                  {
-                    step: "3",
-                    title: "Place Your Order",
-                    desc: "Enter your delivery address with simple checkout.",
-                  },
-                  {
-                    step: "4",
-                    title: "Fresh Morning Cut",
-                    desc: "Sliced and sealed in sterile, food-grade packaging.",
-                  },
-                  {
-                    step: "5",
-                    title: "Chilled Delivery",
-                    desc: "Delivered fresh and cold directly to your kitchen.",
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col items-center text-center p-5 rounded-2xl bg-[#17171a] border border-[#232328] transition-all hover:border-primary/40 hover:-translate-y-1 group"
-                  >
-                    {/* Step Number Circle Badge */}
-                    <div className="w-8 h-8 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center mb-3.5 shadow-md shadow-primary/20 group-hover:scale-110 transition-transform">
-                      {item.step}
-                    </div>
-
-                    <h3 className="font-extrabold text-sm text-white mb-2 leading-snug">
-                      {item.title}
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-stone-400 leading-relaxed">
-                      {item.desc}
-                    </p>
-                  </div>
-                ))}
+            <div className="bg-white p-6 rounded-xl border border-zinc-200/90">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-zinc-100 border border-zinc-200 text-primary flex items-center justify-center">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold text-zinc-400 tabular-nums">
+                  03
+                </span>
               </div>
+              <h3 className="text-base font-bold text-zinc-900 mb-1.5">
+                Scheduled & Express Delivery
+              </h3>
+              <p className="text-sm text-zinc-600 leading-relaxed">
+                Select morning, afternoon, evening, or 45-minute express dispatch across Pokhara, or pick up directly at Khudi Chowk.
+              </p>
             </div>
           </div>
         </div>

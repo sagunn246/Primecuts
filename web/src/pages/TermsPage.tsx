@@ -1,6 +1,14 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, ShoppingBag, Truck, RefreshCcw, AlertTriangle, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  ShoppingBag,
+  Truck,
+  RefreshCcw,
+  AlertTriangle,
+  ChevronRight,
+} from "lucide-react";
 import SEO from "../components/SEO";
 
 const sections = [
@@ -20,8 +28,8 @@ const sections = [
   {
     icon: Truck,
     title: "Chilled Express Delivery",
-    color: "bg-blue-50",
-    iconColor: "text-blue-600",
+    color: "bg-zinc-100",
+    iconColor: "text-zinc-800",
     items: [
       "Delivery is available across Pokhara, Lekhnath, and surrounding accessible routes.",
       "Due to the perishable nature of fresh meat, orders are dispatched in insulated, chilled containers.",
@@ -32,8 +40,8 @@ const sections = [
   {
     icon: RefreshCcw,
     title: "Cancellations & Freshness Guarantee",
-    color: "bg-emerald-50",
-    iconColor: "text-emerald-600",
+    color: "bg-zinc-100",
+    iconColor: "text-zinc-800",
     items: [
       "Orders can be cancelled while in 'pending' status before butchering begins.",
       "Once custom cutting or packaging has commenced, perishable meat cannot be cancelled or returned.",
@@ -78,7 +86,9 @@ export default function TermsPage() {
             <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
               <FileText className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-black mb-3">Terms & Conditions</h1>
+            <h1 className="text-3xl md:text-4xl font-black mb-3">
+              Terms & Conditions
+            </h1>
             <p className="text-stone-400 font-medium text-sm md:text-base">
               Prime Cuts (Artisanal Butcher House) · Pokhara, Nepal
             </p>
@@ -88,19 +98,28 @@ export default function TermsPage() {
 
       <div className="max-w-3xl mx-auto px-4 py-12 md:py-16">
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-7 md:p-10 space-y-10">
-          
           {/* Intro */}
           <section>
             <p className="text-stone-600 font-medium leading-relaxed">
-              By accessing and placing orders with <strong className="text-stone-900">Prime Cuts (Butcher House)</strong>, you agree to be bound by these Terms & Conditions. Please read them carefully before purchasing our fresh meat cuts.
+              By accessing and placing orders with{" "}
+              <strong className="text-stone-900">
+                Prime Cuts (Butcher House)
+              </strong>
+              , you agree to be bound by these Terms & Conditions. Please read
+              them carefully before purchasing our fresh meat cuts.
             </p>
           </section>
 
           {/* Acceptance */}
           <section>
-            <h2 className="text-xl font-black text-stone-900 mb-3">Acceptance of Terms</h2>
+            <h2 className="text-xl font-black text-stone-900 mb-3">
+              Acceptance of Terms
+            </h2>
             <p className="text-stone-600 font-medium leading-relaxed">
-              By creating an account or placing an order through our platform, you confirm that you are at least 13 years of age and have the legal capacity to enter into a binding agreement. These terms apply to all visitors, users, and customers of our service.
+              By creating an account or placing an order through our platform,
+              you confirm that you are at least 13 years of age and have the
+              legal capacity to enter into a binding agreement. These terms
+              apply to all visitors, users, and customers of our service.
             </p>
           </section>
 
@@ -108,14 +127,21 @@ export default function TermsPage() {
           {sections.map((section) => (
             <section key={section.title}>
               <div className="flex items-center gap-2.5 mb-4">
-                <div className={`w-9 h-9 ${section.color} rounded-xl flex items-center justify-center`}>
+                <div
+                  className={`w-9 h-9 ${section.color} rounded-xl flex items-center justify-center`}
+                >
                   <section.icon className={`w-5 h-5 ${section.iconColor}`} />
                 </div>
-                <h2 className="text-xl font-black text-stone-900">{section.title}</h2>
+                <h2 className="text-xl font-black text-stone-900">
+                  {section.title}
+                </h2>
               </div>
               <ul className="space-y-2.5">
                 {section.items.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-stone-600 font-medium leading-relaxed text-sm md:text-base">
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-stone-600 font-medium leading-relaxed text-sm md:text-base"
+                  >
                     <ChevronRight className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
@@ -141,14 +167,18 @@ export default function TermsPage() {
                 ))}
               </ul>
               <p className="mt-3">
-                For QR payments, please retain a screenshot of your payment confirmation. We are not liable for payments made to incorrect QR codes or accounts.
+                For QR payments, please retain a screenshot of your payment
+                confirmation. We are not liable for payments made to incorrect
+                QR codes or accounts.
               </p>
             </div>
           </section>
 
           {/* User Accounts */}
           <section>
-            <h2 className="text-xl font-black text-stone-900 mb-3">User Accounts</h2>
+            <h2 className="text-xl font-black text-stone-900 mb-3">
+              User Accounts
+            </h2>
             <div className="text-stone-600 font-medium leading-relaxed space-y-2">
               <ul className="space-y-2">
                 {[
@@ -168,29 +198,43 @@ export default function TermsPage() {
 
           {/* Changes to Terms */}
           <section>
-            <h2 className="text-xl font-black text-stone-900 mb-3">Changes to These Terms</h2>
+            <h2 className="text-xl font-black text-stone-900 mb-3">
+              Changes to These Terms
+            </h2>
             <p className="text-stone-600 font-medium leading-relaxed">
-              We reserve the right to update these Terms & Conditions at any time. Changes will be posted on this page with an updated date. Continued use of our service after changes constitutes acceptance of the new terms.
+              We reserve the right to update these Terms & Conditions at any
+              time. Changes will be posted on this page with an updated date.
+              Continued use of our service after changes constitutes acceptance
+              of the new terms.
             </p>
           </section>
 
           {/* Governing Law */}
           <section className="bg-stone-50 rounded-2xl p-6">
-            <h2 className="text-lg font-black text-stone-900 mb-2">Governing Law</h2>
+            <h2 className="text-lg font-black text-stone-900 mb-2">
+              Governing Law
+            </h2>
             <p className="text-stone-600 font-medium leading-relaxed text-sm">
-              These Terms & Conditions are governed by the laws of Nepal. Any disputes arising from the use of our service shall be subject to the jurisdiction of the courts of Nepal.
+              These Terms & Conditions are governed by the laws of Nepal. Any
+              disputes arising from the use of our service shall be subject to
+              the jurisdiction of the courts of Nepal.
             </p>
           </section>
-
         </div>
 
         {/* Back links */}
         <div className="mt-8 text-center">
-          <Link to="/" className="text-sm font-bold text-stone-500 hover:text-primary transition-colors">
+          <Link
+            to="/"
+            className="text-sm font-bold text-stone-500 hover:text-primary transition-colors"
+          >
             ← Back to Home
           </Link>
           <span className="mx-3 text-stone-300">·</span>
-          <Link to="/privacy-policy" className="text-sm font-bold text-stone-500 hover:text-primary transition-colors">
+          <Link
+            to="/privacy-policy"
+            className="text-sm font-bold text-stone-500 hover:text-primary transition-colors"
+          >
             Privacy Policy →
           </Link>
         </div>
