@@ -3,7 +3,7 @@ import { Download, X, Smartphone, CheckCircle2, Share } from "lucide-react";
 import { usePWA } from "../context/PWAContext";
 
 export default function PWAInstallPrompt() {
-  const { isInstalled, isInstallable, installApp, showIOSInstructions, setShowIOSInstructions } = usePWA();
+  const { isInstalled, installApp, showIOSInstructions, setShowIOSInstructions } = usePWA();
   const [showFloatingBanner, setShowFloatingBanner] = useState(false);
 
   useEffect(() => {
@@ -12,32 +12,30 @@ export default function PWAInstallPrompt() {
       return;
     }
 
-    const dismissedUntil = localStorage.getItem("prime_pwa_dismissed_until");
-    if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
+    // Clear legacy 5-day localStorage lock so the prompt can render
+    localStorage.removeItem("prime_pwa_dismissed_until");
+
+    const dismissedInSession = sessionStorage.getItem("prime_pwa_banner_dismissed");
+    if (dismissedInSession === "true") {
       return;
     }
 
-    if (isInstallable) {
-      const timer = setTimeout(() => setShowFloatingBanner(true), 3500);
-      return () => clearTimeout(timer);
-    }
-  }, [isInstallable, isInstalled]);
+    const timer = setTimeout(() => setShowFloatingBanner(true), 1000);
+    return () => clearTimeout(timer);
+  }, [isInstalled]);
 
   const handleDismiss = () => {
     setShowFloatingBanner(false);
-    localStorage.setItem(
-      "prime_pwa_dismissed_until",
-      (Date.now() + 5 * 24 * 60 * 60 * 1000).toString()
-    );
+    sessionStorage.setItem("prime_pwa_banner_dismissed", "true");
   };
 
   return (
     <>
-      {/* 1. Subtle Floating Top Prompt Banner (dismissible) */}
+      {/* 1. Subtle Floating Bottom-Left Prompt Banner (dismissible) */}
       {showFloatingBanner && !isInstalled && (
-        <aside 
+        <aside
           aria-label="Install Mobile App"
-          className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:top-20 z-50 max-w-sm w-auto animate-in fade-in slide-in-from-top-3 duration-300"
+          className="fixed bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-3 right-3 sm:right-auto sm:bottom-6 sm:left-6 z-[60] max-w-sm w-auto animate-in fade-in slide-in-from-bottom-3 duration-300"
         >
           <div className="bg-stone-950/90 backdrop-blur-2xl text-white p-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/20 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">

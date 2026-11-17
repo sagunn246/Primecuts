@@ -1,6 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { LayoutDashboard, Package, Tags, ShoppingCart, LogOut, Menu, X, Home } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  Tags,
+  ShoppingCart,
+  LogOut,
+  X,
+  ExternalLink,
+  Plus,
+  ChevronLeft,
+  BookOpen,
+  Store,
+  Bell,
+} from "lucide-react";
 import { AdminLiveProvider, useAdminLive } from "../../context/AdminLiveContext";
 import AdminPushSetup from "../../components/AdminPushSetup";
 import NotificationBell from "../../components/NotificationBell";
@@ -9,7 +22,6 @@ function AdminLayoutContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { newOrderNotification, dismissNotification, stats } = useAdminLive();
 
   const handleLogout = async () => {
@@ -24,10 +36,11 @@ function AdminLayoutContent() {
   };
 
   const navItems = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Products", href: "/admin/products", icon: Package },
-    { name: "Categories", href: "/admin/categories", icon: Tags },
-    { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
+    { name: "Overview", mobileName: "Overview", href: "/admin", icon: LayoutDashboard },
+    { name: "Orders", mobileName: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: stats?.pendingOrders || 0 },
+    { name: "Products", mobileName: "Inventory", href: "/admin/products", icon: Package },
+    { name: "Categories", mobileName: "Categories", href: "/admin/categories", icon: Tags },
+    { name: "Staff Guide", mobileName: "Guide", href: "/admin/guide", icon: BookOpen, desktopOnly: true },
   ];
 
   const isActive = (href: string) => {
@@ -35,163 +48,323 @@ function AdminLayoutContent() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
+  // Contextual screen title & back button for mobile native header
+  const getPageMeta = () => {
+    if (pathname === "/admin") {
+      return { title: "Overview", subtitle: "Operations & Daily Sales", backTo: null };
+    }
+    if (pathname === "/admin/orders") {
+      return { title: "Orders", subtitle: "Live Fulfillment Queue", backTo: null };
+    }
+    if (pathname.startsWith("/admin/orders/")) {
+      return { title: "Order Inspector", subtitle: "Fulfillment & Receipt", backTo: "/admin/orders" };
+    }
+    if (pathname === "/admin/products") {
+      return { title: "Inventory", subtitle: "Cuts, Pricing & Stock", backTo: null };
+    }
+    if (pathname === "/admin/products/new") {
+      return { title: "New Cut", subtitle: "Add Product to Catalog", backTo: "/admin/products" };
+    }
+    if (pathname.endsWith("/edit") && pathname.startsWith("/admin/products/")) {
+      return { title: "Edit Cut", subtitle: "Update Product & Pricing", backTo: "/admin/products" };
+    }
+    if (pathname === "/admin/categories") {
+      return { title: "Categories", subtitle: "Catalog Structure", backTo: null };
+    }
+    if (pathname === "/admin/guide") {
+      return { title: "Staff Guide", subtitle: "POS & Dispatch Manual", backTo: "/admin" };
+    }
+    return { title: "Prime Admin", subtitle: "Workspace", backTo: "/admin" };
+  };
+
+  const pageMeta = getPageMeta();
+  const pendingOrders = stats?.pendingOrders || 0;
+
   return (
-    <div className="flex h-screen bg-stone-50 overflow-hidden relative">
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#111111] text-white relative z-40">
-        <div className="p-6 border-b border-white/10 flex justify-between items-center">
-          <Link to="/admin" className="flex items-center gap-2.5">
-            <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
-              <img src="/favicon-circle.png" alt="Prime Cuts" className="w-full h-full object-contain filter drop-shadow-sm" />
+    <div className="flex h-dvh w-full bg-[#f4f4f6] text-stone-900 overflow-hidden select-none">
+      {/* ================================================================= */}
+      {/* DESKTOP SIDEBAR (Professional Dark Software Dock)                 */}
+      {/* ================================================================= */}
+      <aside className="hidden md:flex flex-col w-60 bg-[#0d0d0f] text-stone-300 border-r border-white/[0.08] shrink-0 z-40">
+        {/* Brand Header */}
+        <div className="h-14 px-4 border-b border-white/[0.08] flex items-center justify-between">
+          <Link to="/admin" className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+              <img src="/favicon-circle.png" alt="Prime Cuts" className="w-5 h-5 object-contain" />
             </div>
-            <span className="text-lg font-black text-white">Prime <span className="text-primary">Admin</span></span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <NotificationBell type="admin" />
-            {stats && stats.pendingOrders > 0 && (
-              <div className="flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-full text-xs font-black animate-pulse">
-                {stats.pendingOrders}
+            <div className="truncate">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-white tracking-tight">Prime Cuts</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/10 text-stone-300">
+                  POS
+                </span>
               </div>
-            )}
+            </div>
+          </Link>
+          <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live
+          </span>
+        </div>
+
+        {/* Quick Primary Action */}
+        <div className="p-3 border-b border-white/[0.06]">
+          <Link
+            to="/admin/products/new"
+            className="w-full h-9 px-3 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>New Product Cut</span>
+          </Link>
+        </div>
+
+        {/* Navigation Sections */}
+        <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-5">
+          <div>
+            <div className="px-2.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+              Workspace
+            </div>
+            <nav className="space-y-0.5">
+              {navItems.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors ${active
+                        ? "bg-white/[0.1] text-white font-semibold"
+                        : "text-stone-400 hover:text-stone-100 hover:bg-white/[0.04]"
+                      }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <item.icon className={`w-4 h-4 ${active ? "text-primary" : "text-stone-400"}`} />
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="px-1.5 py-0.5 min-w-[20px] text-center bg-primary text-white rounded text-[10px] font-bold tabular-nums">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
         </div>
-        
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-colors relative ${
-                  active ? "bg-primary text-white shadow-md shadow-primary/20" : "text-stone-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-                {item.name === "Orders" && stats && stats.pendingOrders > 0 && (
-                  <span className="absolute right-4 px-2 py-0.5 bg-red-500 text-white rounded-full text-[10px] font-black animate-pulse">
-                    {stats.pendingOrders}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
 
-        {/* Bottom Actions: Go to Home + Logout */}
-        <div className="p-4 border-t border-white/10 space-y-1">
+        {/* Sidebar Footer */}
+        <div className="p-2.5 border-t border-white/[0.08] space-y-0.5">
           <Link
             to="/"
-            className="flex items-center gap-3 w-full px-4 py-3 text-stone-400 hover:text-white font-bold transition-colors rounded-xl hover:bg-white/5"
+            className="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-stone-400 hover:text-white hover:bg-white/[0.04] transition-colors"
           >
-            <Home className="w-5 h-5" />
-            Go to Home
+            <span className="flex items-center gap-2.5">
+              <Store className="w-4 h-4 text-stone-500" />
+              <span>View Storefront</span>
+            </span>
+            <ExternalLink className="w-3.5 h-3.5 text-stone-500" />
           </Link>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-3 text-stone-400 hover:text-red-400 font-bold transition-colors rounded-xl hover:bg-white/5 cursor-pointer"
+            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-xs font-medium text-stone-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
-            <LogOut className="w-5 h-5" />
-            Logout
+            <LogOut className="w-4 h-4 text-stone-500" />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Mobile Top Header with generous safe-area top gap */}
-        <header className="md:hidden sticky top-0 z-40 flex items-center justify-between px-4 pt-[max(calc(env(safe-area-inset-top,0px)+24px),32px)] pb-3.5 bg-[#111111] text-white border-b border-white/10 shadow-sm shrink-0">
-          <Link to="/admin" className="flex items-center gap-2">
-            <div className="relative w-8 h-8 flex items-center justify-center flex-shrink-0">
-              <img src="/favicon-circle.png" alt="Prime Cuts" className="w-full h-full object-contain filter drop-shadow-sm" />
-            </div>
-            <span className="text-base font-black text-white">Prime <span className="text-primary">Admin</span></span>
-          </Link>
-          <div className="flex items-center gap-2.5">
-            <NotificationBell type="admin" />
-            {stats && stats.pendingOrders > 0 && (
-              <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full font-black animate-pulse">
-                {stats.pendingOrders} pending
-              </span>
+      {/* ================================================================= */}
+      {/* MAIN CONTENT SHELL                                                */}
+      {/* ================================================================= */}
+      <div className="flex-1 flex flex-col h-dvh min-w-0 overflow-hidden">
+        {/* Desktop Top Bar */}
+        <header className="hidden md:flex h-14 bg-white border-b border-stone-200/90 px-6 items-center justify-between shrink-0 z-30">
+          <div className="flex items-center gap-3 min-w-0">
+            {pageMeta.backTo && (
+              <Link
+                to={pageMeta.backTo}
+                className="p-1.5 -ml-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                title="Back"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Link>
             )}
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              className="p-1.5 text-stone-400 hover:text-red-400 cursor-pointer"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="flex items-baseline gap-2.5 truncate">
+              <h1 className="text-sm font-bold text-stone-900 tracking-tight">{pageMeta.title}</h1>
+              <span className="text-stone-300">•</span>
+              <span className="text-xs text-stone-500 truncate">{pageMeta.subtitle}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {pendingOrders > 0 && (
+              <Link
+                to="/admin/orders"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-semibold hover:bg-amber-100/70 transition-colors tabular-nums"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                <span>{pendingOrders} Pending {pendingOrders === 1 ? "Order" : "Orders"}</span>
+              </Link>
+            )}
+            <div className="h-4 w-px bg-stone-200" />
+            <div className="text-stone-700">
+              <NotificationBell type="admin" />
+            </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-stone-50 pb-28 md:pb-8">
-          <Outlet />
+        {/* Mobile Native App Top Bar */}
+        <header className="md:hidden bg-[#0d0d0f] text-white border-b border-white/[0.08] px-3.5 pt-[max(calc(env(safe-area-inset-top,0px)+10px),14px)] pb-2.5 shrink-0 z-40">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {pageMeta.backTo ? (
+                <button
+                  type="button"
+                  onClick={() => navigate(pageMeta.backTo!)}
+                  className="w-8 h-8 -ml-1 rounded-lg bg-white/[0.07] active:bg-white/[0.15] flex items-center justify-center text-white shrink-0"
+                  aria-label="Go Back"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              ) : (
+                <div className="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/10 flex items-center justify-center shrink-0">
+                  <img src="/favicon-circle.png" alt="Prime Cuts" className="w-4 h-4 object-contain" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-[15px] font-bold text-white tracking-tight truncate leading-tight">
+                    {pageMeta.title}
+                  </h1>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="Live Connected" />
+                </div>
+                <p className="text-[11px] text-stone-400 truncate leading-tight">{pageMeta.subtitle}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {pendingOrders > 0 && pathname !== "/admin/orders" && (
+                <Link
+                  to="/admin/orders"
+                  className="px-2 py-1 bg-primary text-white text-[11px] rounded-md font-bold tabular-nums flex items-center gap-1 active:scale-95 transition-transform"
+                >
+                  <span>{pendingOrders}</span>
+                  <span className="text-[10px] font-medium opacity-90">new</span>
+                </Link>
+              )}
+              <NotificationBell type="admin" />
+              <button
+                type="button"
+                onClick={handleLogout}
+                title="Sign Out"
+                className="w-8 h-8 rounded-lg text-stone-400 hover:text-white active:bg-white/10 flex items-center justify-center cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Scrollable Workspace Viewport */}
+        <main className="flex-1 overflow-y-auto overscroll-y-contain p-3 sm:p-5 md:p-6 pb-24 md:pb-8 smooth-scroll-y">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
 
-        {/* Mobile Admin Bottom Navigation Bar */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#111111] border-t border-[#222222] z-50 shadow-[0_-4px_16px_rgba(0,0,0,0.3)]">
-          <div className="flex justify-around items-center px-2 pt-2.5 pb-[max(1.75rem,calc(env(safe-area-inset-bottom,0px)+1.25rem))]">
-            <Link to="/admin" className="flex flex-col items-center gap-1 group py-1 active:scale-95 transition-transform">
-              <LayoutDashboard className={`w-5 h-5 transition-colors ${isActive("/admin") ? "text-primary stroke-[2.5]" : "text-stone-400 group-hover:text-white"}`} />
-              <span className={`text-[10px] font-bold transition-colors ${isActive("/admin") ? "text-primary" : "text-stone-400 group-hover:text-white"}`}>Dashboard</span>
-            </Link>
+        {/* Mobile Native Bottom Tab Bar */}
+        <nav
+          aria-label="Admin Navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0d0d0f]/95 backdrop-blur-xl border-t border-white/[0.08] z-40"
+        >
+          <div className="grid grid-cols-5 items-center px-1 pt-1.5 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))]">
+            {navItems
+              .filter((item) => !item.desktopOnly)
+              .map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="relative flex flex-col items-center justify-center py-1 gap-0.5 active:scale-95 transition-transform"
+                  >
+                    {active && (
+                      <span className="absolute -top-1.5 w-6 h-0.5 rounded-full bg-primary" />
+                    )}
+                    <div className="relative">
+                      <item.icon
+                        className={`w-[19px] h-[19px] transition-colors ${active ? "text-white stroke-[2.2]" : "text-stone-500"
+                          }`}
+                      />
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center tabular-nums border border-[#0d0d0f]">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10px] tracking-tight transition-colors ${active ? "text-white font-semibold" : "text-stone-500 font-medium"
+                        }`}
+                    >
+                      {item.mobileName}
+                    </span>
+                  </Link>
+                );
+              })}
 
-            <Link to="/admin/products" className="flex flex-col items-center gap-1 group py-1 active:scale-95 transition-transform">
-              <Package className={`w-5 h-5 transition-colors ${isActive("/admin/products") ? "text-primary stroke-[2.5]" : "text-stone-400 group-hover:text-white"}`} />
-              <span className={`text-[10px] font-bold transition-colors ${isActive("/admin/products") ? "text-primary" : "text-stone-400 group-hover:text-white"}`}>Products</span>
-            </Link>
-
-            <Link to="/admin/categories" className="flex flex-col items-center gap-1 group py-1 active:scale-95 transition-transform">
-              <Tags className={`w-5 h-5 transition-colors ${isActive("/admin/categories") ? "text-primary stroke-[2.5]" : "text-stone-400 group-hover:text-white"}`} />
-              <span className={`text-[10px] font-bold transition-colors ${isActive("/admin/categories") ? "text-primary" : "text-stone-400 group-hover:text-white"}`}>Categories</span>
-            </Link>
-
-            <Link to="/admin/orders" className="flex flex-col items-center gap-1 group relative py-1 active:scale-95 transition-transform">
-              <div className="relative">
-                <ShoppingCart className={`w-5 h-5 transition-colors ${isActive("/admin/orders") ? "text-primary stroke-[2.5]" : "text-stone-400 group-hover:text-white"}`} />
-                {stats && stats.pendingOrders > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-pulse">
-                    {stats.pendingOrders}
-                  </span>
-                )}
-              </div>
-              <span className={`text-[10px] font-bold transition-colors ${isActive("/admin/orders") ? "text-primary" : "text-stone-400 group-hover:text-white"}`}>Orders</span>
-            </Link>
-
-            <Link to="/" className="flex flex-col items-center gap-1 group py-1 active:scale-95 transition-transform">
-              <Home className="w-5 h-5 text-stone-400 group-hover:text-white transition-colors" />
-              <span className="text-[10px] font-bold text-stone-400 group-hover:text-white transition-colors">Home</span>
+            <Link
+              to="/"
+              className="flex flex-col items-center justify-center py-1 gap-0.5 active:scale-95 transition-transform"
+            >
+              <Store className="w-[19px] h-[19px] text-stone-500" />
+              <span className="text-[10px] font-medium text-stone-500 tracking-tight">Store</span>
             </Link>
           </div>
-        </div>
+        </nav>
       </div>
 
-      {/* Floating Alert for incoming orders */}
+      {/* Real-Time New Order Dispatch Alert */}
       {newOrderNotification && newOrderNotification.show && (
-        <div className="fixed bottom-24 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 z-[9999] bg-stone-900 border-2 border-primary text-white p-5 rounded-2xl shadow-2xl flex flex-col gap-3 transition-all duration-300 animate-slide-in">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2 text-primary">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-              <span className="font-black uppercase tracking-widest text-[10px]">New Order Incoming</span>
+        <div className="fixed bottom-20 md:bottom-5 left-3 right-3 md:left-auto md:right-5 md:w-88 z-[9999] bg-[#111113] border border-white/15 text-white p-4 rounded-xl shadow-2xl flex flex-col gap-3 animate-in slide-in-from-bottom-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+              <span className="font-bold uppercase tracking-wider text-[11px] text-stone-200">
+                Incoming Order
+              </span>
             </div>
-            <button onClick={dismissNotification} className="text-stone-400 hover:text-white cursor-pointer">
+            <button
+              onClick={dismissNotification}
+              className="p-1 text-stone-400 hover:text-white rounded-md cursor-pointer"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div>
-            <p className="text-lg font-black">{newOrderNotification.orderNumber}</p>
-            <p className="text-sm font-semibold text-stone-300 mt-1">Customer: {newOrderNotification.customerName}</p>
-            <p className="text-xs text-stone-400 mt-0.5">Amount: Rs. {newOrderNotification.amount.toFixed(2)}</p>
+          <div className="flex items-baseline justify-between border-y border-white/10 py-2.5">
+            <div>
+              <p className="text-sm font-bold text-white">#{newOrderNotification.orderNumber}</p>
+              <p className="text-xs text-stone-400 mt-0.5">{newOrderNotification.customerName}</p>
+            </div>
+            <p className="text-base font-bold text-emerald-400 tabular-nums">
+              Rs. {newOrderNotification.amount.toFixed(2)}
+            </p>
           </div>
-          <Link
-            to="/admin/orders"
-            onClick={dismissNotification}
-            className="w-full py-2.5 bg-primary text-white font-black text-xs uppercase tracking-wider rounded-xl text-center hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            Open Orders
-          </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={dismissNotification}
+              className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-semibold text-stone-300 cursor-pointer"
+            >
+              Dismiss
+            </button>
+            <Link
+              to="/admin/orders"
+              onClick={dismissNotification}
+              className="flex-1 py-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs rounded-lg text-center transition-colors"
+            >
+              View in Queue
+            </Link>
+          </div>
         </div>
       )}
     </div>

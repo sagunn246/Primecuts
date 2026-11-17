@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Edit, Trash2, Image as ImageIcon, Search, Filter, AlertCircle, Loader2, Sparkles, Check } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Image as ImageIcon,
+  Search,
+  AlertCircle,
+  Loader2,
+  X,
+  Tags,
+  RefreshCw,
+} from "lucide-react";
 import StockToggle from "../../components/admin/StockToggle";
 import { getProductImageUrl, handleProductImageError } from "@/utils/imageUtils";
 
@@ -8,6 +19,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "in_stock" | "sold_out">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -53,8 +65,8 @@ export default function AdminProductsPage() {
       const data = await res.json();
       if (data.success) {
         setProducts((prev) => prev.filter((p) => (p.id || p._id) !== targetId));
-        setFeedback({ type: "success", message: `"${productToDelete.name}" deleted successfully!` });
-        setTimeout(() => setFeedback(null), 4000);
+        setFeedback({ type: "success", message: `"${productToDelete.name}" deleted.` });
+        setTimeout(() => setFeedback(null), 3500);
       } else {
         setFeedback({ type: "error", message: data.error || "Failed to delete product." });
       }
@@ -66,123 +78,188 @@ export default function AdminProductsPage() {
     }
   };
 
+  const inStockCount = products.filter((p) => (p.available ?? p.isAvailable ?? true) === true).length;
+  const soldOutCount = products.length - inStockCount;
+
   const filteredProducts = products.filter((product) => {
+    const isAvailable = Boolean(product.available ?? product.isAvailable ?? true);
+    const matchesStock =
+      stockFilter === "all" ||
+      (stockFilter === "in_stock" && isAvailable) ||
+      (stockFilter === "sold_out" && !isAvailable);
+
     const matchesCategory =
       selectedCategory === "all" ||
       product.category?.toLowerCase() === selectedCategory.toLowerCase();
+
     const matchesSearch =
       !searchQuery ||
       product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+
+    return matchesStock && matchesCategory && matchesSearch;
   });
 
   return (
-    <div className="space-y-5 pb-6">
+    <div className="space-y-3.5 pb-6">
       {/* Toast Feedback */}
       {feedback && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md animate-in fade-in">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-sm animate-in fade-in">
           <div
-            className={`rounded-2xl shadow-2xl p-4 flex items-center gap-3 text-white ${
-              feedback.type === "success" ? "bg-emerald-600" : "bg-red-600"
+            className={`rounded-xl shadow-lg px-4 py-3 flex items-center gap-2.5 text-white text-xs font-semibold ${
+              feedback.type === "success" ? "bg-stone-900" : "bg-red-600"
             }`}
           >
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <p className="flex-1 text-xs sm:text-sm font-bold">{feedback.message}</p>
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <p className="flex-1">{feedback.message}</p>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">Meat Products</h1>
-          <p className="text-xs sm:text-sm font-semibold text-stone-500 mt-0.5">
-            Manage your cuts, prices per kg, stock status, and categories.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          <Link
-            to="/admin/categories"
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-white text-stone-700 font-bold px-3.5 py-2.5 rounded-xl border border-stone-200 hover:bg-stone-50 active:scale-95 transition-all shadow-xs text-xs sm:text-sm"
-          >
-            Categories
-          </Link>
-          <Link
-            to="/admin/products/new"
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary text-white font-black px-4 py-2.5 rounded-xl hover:bg-primary-hover active:scale-95 transition-all shadow-md shadow-primary/20 text-xs sm:text-sm cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Add Cut
-          </Link>
-        </div>
-      </div>
+      {/* ================================================================= */}
+      {/* TOP INVENTORY TOOLBAR                                             */}
+      {/* ================================================================= */}
+      <div className="bg-white rounded-xl border border-stone-200/90 p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Stock Status Segmented Filter */}
+          <div className="grid grid-cols-3 bg-stone-100 p-0.5 rounded-lg border border-stone-200/80">
+            {[
+              { id: "all", label: "All Cuts", count: products.length },
+              { id: "in_stock", label: "In Stock", count: inStockCount },
+              { id: "sold_out", label: "Sold Out", count: soldOutCount },
+            ].map((item) => {
+              const active = stockFilter === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setStockFilter(item.id as any)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    active
+                      ? "bg-white text-stone-900 shadow-2xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded tabular-nums ${
+                      active ? "bg-stone-900 text-white" : "bg-stone-200/80 text-stone-600"
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-          <input
-            type="text"
-            placeholder="Search cuts by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all"
-          />
-          {searchQuery && (
+          {/* Primary Actions */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-600"
+              type="button"
+              onClick={loadData}
+              className="h-9 px-2.5 rounded-lg border border-stone-200/90 bg-stone-50 hover:bg-stone-100 text-stone-600 flex items-center justify-center cursor-pointer"
+              title="Refresh Inventory"
             >
-              Clear
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
             </button>
-          )}
+            <Link
+              to="/admin/categories"
+              className="h-9 px-3 rounded-lg border border-stone-200/90 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Tags className="w-3.5 h-3.5 text-stone-400" />
+              <span>Categories</span>
+            </Link>
+            <Link
+              to="/admin/products/new"
+              className="flex-1 sm:flex-initial h-9 px-3.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-2xs"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Add Cut</span>
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-stone-400 shrink-0" />
-          <span className="text-xs font-bold text-stone-500 uppercase tracking-wider shrink-0">Category:</span>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-          >
-            <option value="all">All Categories ({products.length})</option>
-            {categories.map((cat) => (
-              <option key={cat.id || cat.name} value={cat.name}>
-                {cat.name} ({cat.productCount ?? cat.product_count ?? 0})
-              </option>
-            ))}
-          </select>
+        {/* Search & Horizontal Category Pills */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="relative sm:w-72 shrink-0">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              placeholder="Filter cuts by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-8.5 pl-8.5 pr-7 bg-stone-50 focus:bg-white border border-stone-200/90 focus:border-stone-400 rounded-lg text-xs font-medium text-stone-900 outline-none transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("all")}
+              className={`h-7 px-2.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                selectedCategory === "all"
+                  ? "bg-stone-900 text-white"
+                  : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
+              }`}
+            >
+              All Categories
+            </button>
+            {categories.map((cat) => {
+              const isSelected = selectedCategory.toLowerCase() === (cat.name || "").toLowerCase();
+              return (
+                <button
+                  key={cat.id || cat.name}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`h-7 px-2.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                    isSelected
+                      ? "bg-stone-900 text-white"
+                      : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Loading state */}
       {loading && (
-        <div className="p-12 text-center text-stone-400 font-medium bg-white rounded-2xl border border-stone-200">
-          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-          Loading products & inventory...
+        <div className="p-12 text-center text-stone-400 text-xs font-medium bg-white rounded-xl border border-stone-200/90">
+          <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
+          Loading catalog inventory...
         </div>
       )}
 
       {/* Empty state */}
       {!loading && filteredProducts.length === 0 && (
-        <div className="p-8 text-center text-stone-500 bg-white rounded-2xl border border-stone-200 space-y-3">
-          <ImageIcon className="w-10 h-10 text-stone-300 mx-auto" />
-          <p className="font-bold text-stone-800">No meat products found</p>
-          <p className="text-xs text-stone-400 max-w-sm mx-auto">
-            {searchQuery || selectedCategory !== "all"
-              ? "Try adjusting your search or category filter."
-              : "Click 'Add Cut' to list your first meat cut."}
+        <div className="p-10 text-center text-stone-500 bg-white rounded-xl border border-stone-200/90 space-y-2">
+          <ImageIcon className="w-8 h-8 text-stone-300 mx-auto" />
+          <p className="text-sm font-bold text-stone-800">No cuts match filter</p>
+          <p className="text-xs text-stone-400 max-w-xs mx-auto">
+            {searchQuery || selectedCategory !== "all" || stockFilter !== "all"
+              ? "Try resetting your search or category filter."
+              : "Add your first meat cut to populate the catalog."}
           </p>
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 📱 MOBILE VIEW: DEDICATED PRODUCT CARDS (Visible on < md) */}
-      {/* ========================================================= */}
+      {/* ================================================================= */}
+      {/* MOBILE NATIVE INVENTORY LIST (High-Density Software Rows)         */}
+      {/* ================================================================= */}
       {!loading && filteredProducts.length > 0 && (
-        <div className="grid grid-cols-1 gap-3.5 md:hidden">
+        <div className="bg-white rounded-xl border border-stone-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] divide-y divide-stone-100 overflow-hidden md:hidden">
           {filteredProducts.map((product: any) => {
             const productId = product.id || product._id;
             const isAvailable = product.available ?? product.isAvailable ?? true;
@@ -190,17 +267,14 @@ export default function AdminProductsPage() {
               product.priceType === "weight" || product.price_type === "weight"
                 ? `Rs. ${product.pricePerKg ?? product.price_per_kg}/kg`
                 : product.variants?.length
-                ? `Rs. ${product.variants[0].price} (${product.variants[0].name}${product.variants.length > 1 ? ` +${product.variants.length - 1}` : ""})`
+                ? `Rs. ${product.variants[0].price} • ${product.variants[0].name}`
                 : "—";
 
             return (
-              <div
-                key={productId}
-                className="bg-white rounded-2xl border border-stone-200/90 shadow-xs p-3.5 space-y-3 relative transition-all"
-              >
-                {/* Top Row: Thumbnail + Title + Actions */}
-                <div className="flex items-start gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-stone-100 overflow-hidden border border-stone-200 shrink-0 flex items-center justify-center">
+              <div key={productId} className="p-3 flex items-center justify-between gap-2.5">
+                {/* Left: Thumbnail + Info */}
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-11 h-11 rounded-lg bg-stone-100 overflow-hidden border border-stone-200/80 shrink-0">
                     <img
                       src={getProductImageUrl(product.image)}
                       alt={product.name}
@@ -208,37 +282,23 @@ export default function AdminProductsPage() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-stone-900 text-sm truncate">{product.name}</h3>
-                    <span className="inline-block px-2 py-0.5 bg-stone-100 text-stone-700 rounded-md text-[10px] font-bold mt-1">
-                      {product.category || "Unassigned"}
-                    </span>
-                    <p className="font-black text-primary text-sm mt-1">{priceDisplay}</p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Link
-                      to={`/admin/products/${productId}/edit`}
-                      className="p-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition-colors cursor-pointer"
-                      title="Edit Cut"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Link>
-                    <button
-                      onClick={() => setProductToDelete({ id: productId, name: product.name })}
-                      className="p-2 bg-red-50 hover:bg-red-100 text-primary rounded-xl transition-colors cursor-pointer"
-                      title="Delete Cut"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-stone-900 text-xs truncate leading-tight">
+                      {product.name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-stone-100 text-stone-600 truncate max-w-[90px]">
+                        {product.category || "Uncategorized"}
+                      </span>
+                      <span className="font-bold text-stone-900 text-xs tabular-nums">
+                        {priceDisplay}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Bottom Row: Stock status toggle */}
-                <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-500">Available in Shop:</span>
+                {/* Right: Instant Stock Switch + Edit/Delete */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   <StockToggle
                     productId={productId.toString()}
                     initialAvailable={isAvailable}
@@ -252,6 +312,21 @@ export default function AdminProductsPage() {
                       );
                     }}
                   />
+                  <Link
+                    to={`/admin/products/${productId}/edit`}
+                    className="w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center justify-center active:scale-95 transition-transform"
+                    title="Edit"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setProductToDelete({ id: productId, name: product.name })}
+                    className="w-8 h-8 rounded-lg bg-stone-100 hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             );
@@ -259,31 +334,31 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 💻 DESKTOP VIEW: POLISHED DATA TABLE (Visible on >= md) */}
-      {/* ========================================================= */}
+      {/* ================================================================= */}
+      {/* DESKTOP SOFTWARE DATA TABLE (>= md)                               */}
+      {/* ================================================================= */}
       {!loading && filteredProducts.length > 0 && (
-        <div className="hidden md:block bg-white rounded-2xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="hidden md:block bg-white rounded-xl border border-stone-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-stone-50/90 border-b border-stone-200 text-stone-500 text-xs uppercase tracking-wider font-extrabold">
+            <thead className="bg-stone-50/90 border-b border-stone-200/80 text-stone-500 text-[11px] uppercase tracking-wider font-semibold">
               <tr>
-                <th className="p-4">Image</th>
-                <th className="p-4">Product Cut</th>
-                <th className="p-4">Category</th>
-                <th className="p-4">Price</th>
-                <th className="p-4">Stock Status</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="py-3 px-4 w-14">Item</th>
+                <th className="py-3 px-4">Product Cut</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Rate / Pricing</th>
+                <th className="py-3 px-4">Availability</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100 text-sm">
+            <tbody className="divide-y divide-stone-100 text-xs">
               {filteredProducts.map((product: any) => {
                 const productId = product.id || product._id;
                 const isAvailable = product.available ?? product.isAvailable ?? true;
 
                 return (
                   <tr key={productId} className="hover:bg-stone-50/80 transition-colors">
-                    <td className="p-4">
-                      <div className="w-12 h-12 rounded-xl bg-stone-100 overflow-hidden border border-stone-200 flex items-center justify-center shrink-0">
+                    <td className="py-2.5 px-4">
+                      <div className="w-10 h-10 rounded-lg bg-stone-100 overflow-hidden border border-stone-200 flex items-center justify-center shrink-0">
                         <img
                           src={getProductImageUrl(product.image)}
                           alt={product.name}
@@ -293,30 +368,32 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
 
-                    <td className="p-4">
-                      <p className="font-bold text-stone-900 text-base">{product.name}</p>
+                    <td className="py-2.5 px-4">
+                      <p className="font-bold text-stone-900 text-[13px]">{product.name}</p>
                       {product.description && (
-                        <p className="text-xs text-stone-400 font-medium line-clamp-1 max-w-xs">{product.description}</p>
+                        <p className="text-[11px] text-stone-400 line-clamp-1 max-w-sm mt-0.5">
+                          {product.description}
+                        </p>
                       )}
                     </td>
 
-                    <td className="p-4">
-                      <span className="inline-block px-3 py-1 bg-stone-100 text-stone-800 rounded-lg text-xs font-bold border border-stone-200">
-                        {product.category || "Unassigned"}
+                    <td className="py-2.5 px-4">
+                      <span className="inline-block px-2 py-0.5 bg-stone-100 text-stone-700 rounded text-[11px] font-semibold">
+                        {product.category || "Uncategorized"}
                       </span>
                     </td>
 
-                    <td className="p-4 font-black text-stone-900">
-                      <span className="text-primary font-black text-sm">
-                        {product.priceType === "weight" || product.price_type === "weight"
-                          ? `Rs. ${product.pricePerKg ?? product.price_per_kg}/kg`
-                          : product.variants?.length
-                          ? `Rs. ${product.variants[0].price} (${product.variants[0].name}${product.variants.length > 1 ? ` +${product.variants.length - 1}` : ""})`
-                          : "—"}
-                      </span>
+                    <td className="py-2.5 px-4 font-bold text-stone-900 tabular-nums">
+                      {product.priceType === "weight" || product.price_type === "weight"
+                        ? `Rs. ${product.pricePerKg ?? product.price_per_kg}/kg`
+                        : product.variants?.length
+                        ? `Rs. ${product.variants[0].price} (${product.variants[0].name}${
+                            product.variants.length > 1 ? ` +${product.variants.length - 1}` : ""
+                          })`
+                        : "—"}
                     </td>
 
-                    <td className="p-4">
+                    <td className="py-2.5 px-4">
                       <StockToggle
                         productId={productId.toString()}
                         initialAvailable={isAvailable}
@@ -332,21 +409,21 @@ export default function AdminProductsPage() {
                       />
                     </td>
 
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="py-2.5 px-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         <Link
                           to={`/admin/products/${productId}/edit`}
-                          className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 rounded-xl transition-colors cursor-pointer"
-                          title="Edit Cut"
+                          className="h-7 px-2.5 bg-stone-100 text-stone-700 hover:bg-stone-200 hover:text-stone-900 rounded-md font-semibold text-[11px] inline-flex items-center gap-1 transition-colors"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3 h-3" />
+                          <span>Edit</span>
                         </Link>
                         <button
                           onClick={() => setProductToDelete({ id: productId, name: product.name })}
-                          className="p-2 bg-stone-100 text-stone-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors cursor-pointer"
+                          className="h-7 w-7 bg-stone-100 text-stone-400 hover:bg-red-50 hover:text-red-600 rounded-md inline-flex items-center justify-center transition-colors cursor-pointer"
                           title="Delete Cut"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -361,30 +438,32 @@ export default function AdminProductsPage() {
       {/* Delete Confirmation Modal */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-stone-200 animate-in zoom-in-95">
-            <div className="w-12 h-12 rounded-full bg-red-100 text-primary flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-stone-200 animate-in zoom-in-95">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 border border-red-200 flex items-center justify-center shrink-0">
+                <Trash2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-stone-900">Delete Product Cut</h3>
+                <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+                  Permanently remove <strong className="text-stone-900">"{productToDelete.name}"</strong> from your store catalog?
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <h3 className="text-lg font-black text-stone-900">Delete Product Cut?</h3>
-              <p className="text-sm text-stone-500 mt-1">
-                Are you sure you want to delete <strong className="text-stone-900">"{productToDelete.name}"</strong>?
-              </p>
-            </div>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 justify-end pt-1">
               <button
                 onClick={() => setProductToDelete(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-bold hover:bg-stone-50 transition-colors text-sm cursor-pointer"
+                className="h-8 px-3.5 rounded-lg border border-stone-200 text-stone-600 font-semibold hover:bg-stone-50 transition-colors text-xs cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={Boolean(deletingId)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 active:scale-95 transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+                className="h-8 px-3.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 text-xs"
               >
-                {deletingId && <Loader2 className="w-4 h-4 animate-spin" />}
-                Confirm Delete
+                {deletingId && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Delete Cut
               </button>
             </div>
           </div>

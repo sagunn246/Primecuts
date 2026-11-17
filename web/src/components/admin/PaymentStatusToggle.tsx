@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2, CheckCircle2, Clock } from "lucide-react";
 
 export default function PaymentStatusToggle({
@@ -13,6 +13,10 @@ export default function PaymentStatusToggle({
   const [status, setStatus] = useState(currentPaymentStatus);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setStatus(currentPaymentStatus);
+  }, [currentPaymentStatus]);
 
   const toggle = async () => {
     const newStatus = status === "paid" ? "pending" : "paid";
@@ -41,45 +45,39 @@ export default function PaymentStatusToggle({
   const isPaid = status === "paid";
 
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-bold text-stone-400">Payment Status</p>
-      <div className="flex items-center gap-3">
-        {/* Badge */}
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
         <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-colors ${
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold uppercase border ${
             isPaid
-              ? "bg-green-100 text-green-700"
-              : "bg-amber-100 text-amber-700"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200/90"
+              : "bg-amber-50 text-amber-800 border-amber-200/90"
           }`}
         >
-          {isPaid ? (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          ) : (
-            <Clock className="w-3.5 h-3.5" />
-          )}
+          {isPaid ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
           {status}
         </span>
 
-        {/* Toggle button */}
         <button
+          type="button"
           onClick={toggle}
           disabled={loading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-50 cursor-pointer ${
+          className={`h-7 px-2.5 rounded-md text-[11px] font-semibold border transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1 ${
             isPaid
-              ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-              : "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+              ? "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+              : "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700"
           }`}
         >
           {loading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-3 h-3 animate-spin" />
           ) : isPaid ? (
             "Mark Unpaid"
           ) : (
-            "Mark as Paid ✓"
+            "Mark Paid"
           )}
         </button>
       </div>
-      {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
+      {error && <p className="text-[11px] text-red-500 font-medium">{error}</p>}
     </div>
   );
 }

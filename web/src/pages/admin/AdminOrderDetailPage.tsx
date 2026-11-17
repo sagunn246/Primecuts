@@ -1,6 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, User, MapPin, Package, Phone, Mail, Clock, Calendar, CheckCircle2, ShoppingBag, QrCode, Copy, Check, Bike, Store } from "lucide-react";
+import {
+  User,
+  MapPin,
+  Package,
+  Phone,
+  Clock,
+  ShoppingBag,
+  QrCode,
+  Copy,
+  Check,
+  Bike,
+  Store,
+  Printer,
+  Loader2,
+} from "lucide-react";
 import StatusUpdater from "../../components/admin/StatusUpdater";
 import PaymentStatusToggle from "../../components/admin/PaymentStatusToggle";
 import StaticMapView from "../../components/StaticMapView";
@@ -26,7 +40,7 @@ export default function AdminOrderDetailPage() {
         } else {
           setError(data.error || "Order not found");
         }
-      } catch (err) {
+      } catch {
         setError("Network error");
       } finally {
         setLoading(false);
@@ -44,19 +58,22 @@ export default function AdminOrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto py-16 text-center text-stone-400 font-medium">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        Loading order details...
+      <div className="py-16 text-center text-stone-400 text-xs font-medium bg-white rounded-xl border border-stone-200/90">
+        <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto mb-2" />
+        Loading order inspector...
       </div>
     );
   }
 
   if (error || !order) {
     return (
-      <div className="max-w-4xl mx-auto py-12 text-center space-y-4">
-        <p className="text-red-500 font-bold">{error || "Order not found"}</p>
-        <Link to="/admin/orders" className="inline-block px-5 py-2.5 bg-stone-900 text-white font-bold rounded-xl text-sm">
-          Back to Orders
+      <div className="py-12 text-center space-y-3 bg-white rounded-xl border border-stone-200/90">
+        <p className="text-red-600 text-sm font-bold">{error || "Order not found"}</p>
+        <Link
+          to="/admin/orders"
+          className="inline-block px-4 py-2 bg-stone-900 text-white font-semibold rounded-lg text-xs"
+        >
+          Back to Queue
         </Link>
       </div>
     );
@@ -69,21 +86,21 @@ export default function AdminOrderDetailPage() {
   const customerName = order.customerInfo?.name || order.customer_name || "Customer";
   const customerPhone = order.customerInfo?.phone || order.customer_phone || "";
   const customerEmail = order.customerInfo?.email || order.customer_email || "";
-  const totalAmount = typeof order.totalAmount === "number" ? order.totalAmount : parseFloat(order.total_amount || "0");
+  const totalAmount =
+    typeof order.totalAmount === "number"
+      ? order.totalAmount
+      : parseFloat(order.total_amount || "0");
   const paymentMethod = order.paymentMethod || order.payment_method || "cod";
   const paymentStatus = order.paymentStatus || order.payment_status || "pending";
   const transactionId = order.transactionId || order.transaction_id || "";
-  const latitude = order.latitude !== undefined && order.latitude !== null ? parseFloat(order.latitude) : null;
-  const longitude = order.longitude !== undefined && order.longitude !== null ? parseFloat(order.longitude) : null;
+  const latitude =
+    order.latitude !== undefined && order.latitude !== null ? parseFloat(order.latitude) : null;
+  const longitude =
+    order.longitude !== undefined && order.longitude !== null ? parseFloat(order.longitude) : null;
   const address = order.address || "";
-  const notes = order.notes || "";
   const items = order.items || [];
   const deliverySlot = getOrderDeliverySlot(order);
   const cleanNotes = getCleanOrderNotes(order);
-
-  const handlePrintSlip = () => {
-    printThermalReceipt(order);
-  };
 
   const riderDispatchText = `*🥩 Prime Cuts — Delivery Dispatch*
 Order: #${orderNumber}
@@ -114,180 +131,175 @@ ${items
   const riderWhatsAppUrl = `https://wa.me/?text=${encodeURIComponent(riderDispatchText)}`;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pb-8">
-      {/* Top Bar / Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-xs">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/admin/orders"
-            className="p-2 bg-stone-100 rounded-xl hover:bg-stone-200 text-stone-600 hover:text-black transition-colors shrink-0"
-            title="Back to Orders"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-                Order #{orderNumber}
-              </h1>
-            </div>
-            <p className="text-xs text-stone-400 font-medium mt-0.5">
-              Placed on {new Date(createdAt).toLocaleString()}
-            </p>
+    <div className="space-y-3.5 pb-6">
+      {/* ================================================================= */}
+      {/* TOP INSPECTOR BAR                                                 */}
+      {/* ================================================================= */}
+      <div className="bg-white rounded-xl border border-stone-200/90 p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-stone-900 tabular-nums">
+              Order #{orderNumber}
+            </h2>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-stone-100 text-stone-700 capitalize">
+              {orderType}
+            </span>
           </div>
+          <p className="text-[11px] text-stone-400 font-medium tabular-nums mt-0.5">
+            Placed {new Date(createdAt).toLocaleString()}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          {/* Dispatch to Rider via WhatsApp */}
-          {orderType === "delivery" && (
-            <a
-              href={riderWhatsAppUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-2.5 bg-[#25D366] hover:bg-[#1ebd5a] text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-            >
-              <span>Dispatch to Rider</span>
-            </a>
-          )}
-
-          {/* Print Slip */}
-          <button
-            onClick={handlePrintSlip}
-            className="px-3.5 py-2.5 bg-stone-800 hover:bg-stone-900 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <span>Print Slip</span>
-          </button>
-
+        <div className="flex items-center gap-2 flex-wrap">
           <StatusUpdater
             orderId={orderId.toString()}
             currentStatus={order.status}
             onStatusChange={(newStatus) => setOrder((prev: any) => ({ ...prev, status: newStatus }))}
           />
+
+          <button
+            type="button"
+            onClick={() => printThermalReceipt(order)}
+            className="h-8.5 px-3 bg-white hover:bg-stone-50 border border-stone-200/90 text-stone-800 font-semibold text-xs rounded-lg inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5 text-stone-500" />
+            <span>Print Slip</span>
+          </button>
+
+          {orderType === "delivery" && (
+            <a
+              href={riderWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8.5 px-3 bg-[#25D366] hover:bg-[#1ebd5a] text-white font-semibold text-xs rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Bike className="w-3.5 h-3.5" />
+              <span>Dispatch Rider</span>
+            </a>
+          )}
         </div>
       </div>
 
-      {/* Info Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Customer Details */}
-        <div className="bg-white p-5 rounded-2xl shadow-xs border border-stone-200 space-y-3.5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 border-b border-stone-100 pb-2.5">
-              <User className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-black text-stone-900 uppercase tracking-wider">Customer</h2>
+      {/* ================================================================= */}
+      {/* 3-PANEL ORDER INSPECTOR GRID                                      */}
+      {/* ================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        {/* Panel 1: Customer */}
+        <div className="bg-white p-4 rounded-xl border border-stone-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] space-y-3">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+            <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-stone-400" />
+              Customer Info
+            </span>
+            {customerPhone && (
+              <a
+                href={`tel:${customerPhone}`}
+                className="px-2 py-0.5 bg-stone-900 text-white font-semibold rounded text-[11px] inline-flex items-center gap-1"
+              >
+                <Phone className="w-2.5 h-2.5" />
+                <span>Call</span>
+              </a>
+            )}
+          </div>
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="text-[10px] font-semibold text-stone-400 uppercase block">Name</span>
+              <p className="font-bold text-stone-900 mt-0.5">{customerName}</p>
             </div>
-            <div className="space-y-2.5 mt-3 text-xs">
+            <div>
+              <span className="text-[10px] font-semibold text-stone-400 uppercase block">Phone</span>
+              <p className="font-semibold text-stone-800 tabular-nums mt-0.5 select-text">
+                {customerPhone || "Not provided"}
+              </p>
+            </div>
+            {customerEmail && (
               <div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Name</span>
-                <p className="font-bold text-stone-900 text-sm">{customerName}</p>
+                <span className="text-[10px] font-semibold text-stone-400 uppercase block">Email</span>
+                <p className="font-medium text-stone-600 truncate mt-0.5 select-text">
+                  {customerEmail}
+                </p>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Phone</span>
-                {customerPhone ? (
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="font-bold text-stone-800">{customerPhone}</span>
-                    <a
-                      href={`tel:${customerPhone}`}
-                      className="px-2.5 py-1 bg-red-50 text-primary hover:bg-red-100 font-bold rounded-lg text-[11px] transition-colors inline-flex items-center gap-1"
-                    >
-                      <Phone className="w-3 h-3" /> Call
-                    </a>
-                  </div>
+            )}
+          </div>
+        </div>
+
+        {/* Panel 2: Payment & Verification */}
+        <div className="bg-white p-4 rounded-xl border border-stone-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] space-y-3">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+            <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-stone-400" />
+              Payment & Settlement
+            </span>
+          </div>
+          <div className="space-y-2.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-stone-500">Method</span>
+              <span className="font-semibold text-stone-900 inline-flex items-center gap-1">
+                {paymentMethod === "qr" ? (
+                  <>
+                    <QrCode className="w-3.5 h-3.5 text-primary" />
+                    <span>QR Scan & Pay</span>
+                  </>
                 ) : (
-                  <span className="text-stone-400">Not provided</span>
+                  <span>Cash on Delivery</span>
                 )}
-              </div>
-              {customerEmail && (
-                <div>
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Email</span>
-                  <p className="font-medium text-stone-700 truncate">{customerEmail}</p>
+              </span>
+            </div>
+
+            {transactionId && (
+              <div className="p-2 bg-stone-50 rounded-lg border border-stone-200/80 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-stone-400 uppercase block">
+                    Ref / Txn ID
+                  </span>
+                  <span className="font-mono font-bold text-xs text-stone-900 truncate block select-text">
+                    {transactionId}
+                  </span>
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => copyTxn(transactionId)}
+                  className="p-1.5 hover:bg-stone-200/70 rounded text-stone-600 cursor-pointer shrink-0"
+                  title="Copy Transaction ID"
+                >
+                  {copiedTxn ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+            )}
+
+            <div className="pt-1 border-t border-stone-100">
+              <PaymentStatusToggle
+                orderId={orderId.toString()}
+                currentPaymentStatus={paymentStatus as "pending" | "paid"}
+                onStatusChange={(newStatus) =>
+                  setOrder((prev: any) => ({ ...prev, paymentStatus: newStatus }))
+                }
+              />
             </div>
           </div>
         </div>
 
-        {/* Order Info */}
-        <div className="bg-white p-5 rounded-2xl shadow-xs border border-stone-200 space-y-3.5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 border-b border-stone-100 pb-2.5">
-              <Package className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-black text-stone-900 uppercase tracking-wider">Order & Payment</h2>
-            </div>
-            <div className="space-y-2.5 mt-3 text-xs">
-              <div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Fulfillment</span>
-                <p className="font-bold text-stone-800 capitalize mt-0.5">
-                  {orderType === "delivery" ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Bike className="w-4 h-4 text-primary" /> Home Delivery
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Store className="w-4 h-4 text-primary" /> Store Pickup
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Payment Method</span>
-                <p className="font-bold text-stone-800 mt-0.5 flex items-center gap-1.5">
-                  {paymentMethod === "qr" ? (
-                    <>
-                      <QrCode className="w-3.5 h-3.5 text-primary" />
-                      <span>QR Scan & Pay (Fonepay/eSewa)</span>
-                    </>
-                  ) : (
-                    <span>Cash on Delivery (COD)</span>
-                  )}
-                </p>
-              </div>
-
-              {/* Transaction ID if QR payment */}
-              {transactionId && (
-                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200/80">
-                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Transaction / Ref ID</span>
-                  <div className="flex items-center justify-between gap-1 mt-0.5">
-                    <span className="font-mono font-black text-xs text-emerald-950 truncate">{transactionId}</span>
-                    <button
-                      type="button"
-                      onClick={() => copyTxn(transactionId)}
-                      className="p-1 hover:bg-emerald-200/60 rounded text-emerald-800 cursor-pointer"
-                      title="Copy Transaction ID"
-                    >
-                      {copiedTxn ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Payment Status</span>
-                <PaymentStatusToggle
-                  orderId={orderId.toString()}
-                  currentPaymentStatus={paymentStatus as "pending" | "paid"}
-                  onStatusChange={(newStatus) => setOrder((prev: any) => ({ ...prev, paymentStatus: newStatus }))}
-                />
-              </div>
-            </div>
+        {/* Panel 3: Fulfillment & Location */}
+        <div className="bg-white p-4 rounded-xl border border-stone-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] space-y-3">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+            <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-stone-400" />
+              Fulfillment Details
+            </span>
           </div>
-        </div>
-
-        {/* Delivery / Address Info */}
-        <div className="bg-white p-5 rounded-2xl shadow-xs border border-stone-200 space-y-3.5">
-          <div className="flex items-center gap-2 border-b border-stone-100 pb-2.5">
-            <MapPin className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-black text-stone-900 uppercase tracking-wider">Delivery Details</h2>
-          </div>
-          <div className="space-y-3 text-xs">
-            {/* Preferred Delivery Slot Banner */}
+          <div className="space-y-2.5 text-xs">
             {deliverySlot && (
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/90 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4 text-amber-700" />
-                </div>
+              <div className="p-2.5 bg-amber-50/90 rounded-lg border border-amber-200/80 flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0" />
                 <div>
-                  <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">Customer Delivery Time</span>
-                  <span className="text-sm font-black text-amber-950">{deliverySlot}</span>
+                  <span className="text-[10px] font-semibold text-amber-800 uppercase block">
+                    Requested Slot
+                  </span>
+                  <span className="text-xs font-bold text-amber-950">{deliverySlot}</span>
                 </div>
               </div>
             )}
@@ -295,21 +307,30 @@ ${items
             {orderType === "delivery" ? (
               <div className="space-y-2">
                 <div>
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Address</span>
-                  <p className="font-bold text-stone-800 mt-0.5 leading-relaxed">{address || "Standard delivery"}</p>
+                  <span className="text-[10px] font-semibold text-stone-400 uppercase block">
+                    Delivery Address
+                  </span>
+                  <p className="font-semibold text-stone-800 mt-0.5 leading-snug select-text">
+                    {address || "Standard delivery"}
+                  </p>
                 </div>
-                {address && <StaticMapView address={address} latitude={latitude} longitude={longitude} />}
+                {address && (
+                  <StaticMapView address={address} latitude={latitude} longitude={longitude} />
+                )}
               </div>
             ) : (
-              <div className="bg-amber-50 text-amber-800 p-3 rounded-xl font-bold text-xs border border-amber-200/60">
-                Customer will pick up at store counter.
+              <div className="p-2.5 bg-stone-50 text-stone-700 rounded-lg font-semibold text-xs border border-stone-200/80 flex items-center gap-2">
+                <Store className="w-4 h-4 text-stone-500" />
+                <span>Customer Pickup at Counter</span>
               </div>
             )}
 
             {cleanNotes && (
               <div className="pt-2 border-t border-stone-100">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Special Instructions</span>
-                <p className="text-xs text-stone-700 bg-stone-50 p-2.5 rounded-xl mt-1 italic border border-stone-100">
+                <span className="text-[10px] font-semibold text-stone-400 uppercase block">
+                  Butcher / Order Notes
+                </span>
+                <p className="text-xs text-stone-700 bg-stone-50 p-2 rounded-lg mt-1 border border-stone-200/60 select-text">
                   "{cleanNotes}"
                 </p>
               </div>
@@ -318,18 +339,22 @@ ${items
         </div>
       </div>
 
-      {/* Order Items Section */}
-      <div className="bg-white p-5 rounded-2xl shadow-xs border border-stone-200 space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+      {/* ================================================================= */}
+      {/* LINE ITEMS & TOTALS                                               */}
+      {/* ================================================================= */}
+      <div className="bg-white rounded-xl border border-stone-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
+        <div className="px-4 py-3 border-b border-stone-200/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-primary" />
-            <h2 className="text-base font-black text-stone-900">Order Items ({items.length})</h2>
+            <ShoppingBag className="w-4 h-4 text-stone-400" />
+            <h2 className="text-sm font-bold text-stone-900">Line Items ({items.length})</h2>
           </div>
-          <span className="text-xs font-bold text-stone-500">Summary & Pricing</span>
+          <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+            Preparation Sheet
+          </span>
         </div>
 
-        {/* 📱 Mobile Order Items Card List (< md) */}
-        <div className="space-y-2.5 md:hidden">
+        {/* Mobile Line Items (< md) */}
+        <div className="divide-y divide-stone-100 md:hidden">
           {items.map((item: any, i: number) => {
             const productName = item.productName || item.name || "Item";
             const calculatedPrice =
@@ -343,48 +368,45 @@ ${items
               : item.selectedVariantName || "Standard";
 
             return (
-              <div
-                key={i}
-                className="p-3 bg-stone-50/70 rounded-xl border border-stone-200/80 flex items-start justify-between gap-3 text-xs"
-              >
-                <div className="space-y-1">
-                  <p className="font-bold text-stone-900 text-sm">{productName}</p>
-                  <div className="flex items-center gap-2 text-stone-500">
-                    <span className="bg-stone-200/80 px-2 py-0.5 rounded-md font-bold text-[11px] text-stone-700">
+              <div key={i} className="p-3.5 flex items-center justify-between gap-3 text-xs">
+                <div className="min-w-0">
+                  <p className="font-bold text-stone-900">{productName}</p>
+                  <div className="flex items-center gap-1.5 mt-1 text-stone-500">
+                    <span className="bg-stone-100 px-1.5 py-0.5 rounded font-semibold text-[11px] text-stone-700">
                       {variantText}
                     </span>
-                    <span className="font-black text-stone-800">x{item.qty}</span>
+                    <span className="font-bold text-stone-900">×{item.qty}</span>
+                    {(item.pricePerKgAtTimeOfOrder || item.unitPriceAtTimeOfOrder) && (
+                      <span className="text-[11px] text-stone-400 tabular-nums">
+                        • Rs.{" "}
+                        {item.pricePerKgAtTimeOfOrder
+                          ? `${item.pricePerKgAtTimeOfOrder}/kg`
+                          : item.unitPriceAtTimeOfOrder}
+                      </span>
+                    )}
                   </div>
-                  {(item.pricePerKgAtTimeOfOrder || item.unitPriceAtTimeOfOrder) && (
-                    <p className="text-[11px] text-stone-400">
-                      Rate: Rs. {item.pricePerKgAtTimeOfOrder ? `${item.pricePerKgAtTimeOfOrder}/kg` : item.unitPriceAtTimeOfOrder}
-                    </p>
-                  )}
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Total</span>
-                  <span className="font-black text-stone-900 text-sm">
-                    Rs. {calculatedPrice.toFixed(2)}
-                  </span>
-                </div>
+                <span className="font-bold text-stone-900 tabular-nums shrink-0">
+                  Rs. {calculatedPrice.toFixed(2)}
+                </span>
               </div>
             );
           })}
         </div>
 
-        {/* 💻 Desktop Order Items Table (>= md) */}
+        {/* Desktop Line Items Table (>= md) */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 text-xs uppercase tracking-wider font-extrabold">
+            <thead className="bg-stone-50/80 border-b border-stone-200/80 text-stone-500 text-[11px] uppercase tracking-wider font-semibold">
               <tr>
-                <th className="p-3.5">Product Cut</th>
-                <th className="p-3.5">Size / Variant</th>
-                <th className="p-3.5">Qty</th>
-                <th className="p-3.5">Unit Price</th>
-                <th className="p-3.5 text-right">Total</th>
+                <th className="py-2.5 px-4">Cut / Item</th>
+                <th className="py-2.5 px-4">Weight / Pack</th>
+                <th className="py-2.5 px-4">Qty</th>
+                <th className="py-2.5 px-4">Rate</th>
+                <th className="py-2.5 px-4 text-right">Line Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100 text-sm">
+            <tbody className="divide-y divide-stone-100 text-xs">
               {items.map((item: any, i: number) => {
                 const productName = item.productName || item.name || "Item";
                 const calculatedPrice =
@@ -398,22 +420,22 @@ ${items
                   : item.selectedVariantName || "Standard";
 
                 return (
-                  <tr key={i} className="hover:bg-stone-50/60 transition-colors">
-                    <td className="p-3.5 font-bold text-stone-900">{productName}</td>
-                    <td className="p-3.5 text-stone-600 font-medium">
-                      <span className="bg-stone-100 px-2 py-0.5 rounded-md text-xs font-semibold">
+                  <tr key={i} className="hover:bg-stone-50/60">
+                    <td className="py-3 px-4 font-bold text-stone-900">{productName}</td>
+                    <td className="py-3 px-4">
+                      <span className="bg-stone-100 px-2 py-0.5 rounded text-[11px] font-semibold text-stone-700">
                         {variantText}
                       </span>
                     </td>
-                    <td className="p-3.5 font-black text-stone-900">x{item.qty}</td>
-                    <td className="p-3.5 text-stone-500 text-xs">
+                    <td className="py-3 px-4 font-bold text-stone-900 tabular-nums">×{item.qty}</td>
+                    <td className="py-3 px-4 text-stone-500 tabular-nums">
                       {item.pricePerKgAtTimeOfOrder
                         ? `Rs. ${item.pricePerKgAtTimeOfOrder}/kg`
                         : item.unitPriceAtTimeOfOrder
                         ? `Rs. ${item.unitPriceAtTimeOfOrder}`
-                        : "-"}
+                        : "—"}
                     </td>
-                    <td className="p-3.5 font-black text-stone-900 text-right">
+                    <td className="py-3 px-4 font-bold text-stone-900 text-right tabular-nums">
                       Rs. {calculatedPrice.toFixed(2)}
                     </td>
                   </tr>
@@ -423,13 +445,12 @@ ${items
           </table>
         </div>
 
-        {/* Order Grand Total Box */}
-        <div className="pt-3 border-t border-stone-200/80 flex items-center justify-between bg-stone-50 p-4 rounded-xl">
-          <div>
-            <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block">Grand Total</span>
-            <span className="text-[11px] text-stone-400 font-medium">Includes applicable taxes & delivery fees</span>
-          </div>
-          <span className="text-xl sm:text-2xl font-black text-primary">
+        {/* Grand Total Footer */}
+        <div className="px-4 py-3.5 bg-stone-50 border-t border-stone-200/80 flex items-center justify-between">
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">
+            Total Payable
+          </span>
+          <span className="text-lg sm:text-xl font-bold text-stone-900 tabular-nums">
             Rs. {totalAmount.toFixed(2)}
           </span>
         </div>

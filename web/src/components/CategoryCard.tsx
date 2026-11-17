@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { getCategoryImageUrl, handleCategoryImageError } from "@/utils/imageUtils";
 
 interface CategoryCardProps {
   name: string;
@@ -15,13 +16,11 @@ export default function CategoryCard({ name, slug, image, count }: CategoryCardP
     >
       <div className="w-20 h-20 rounded-full bg-red-50 border-2 border-red-100 flex items-center justify-center mb-3 overflow-hidden group-hover:scale-110 group-hover:border-primary transition-all shadow-inner">
         <img
-          src={image || "/images/cat_chicken.jpg"}
+          src={getCategoryImageUrl(image)}
           alt={name}
           loading="lazy"
           decoding="async"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "/images/cat_chicken.jpg";
-          }}
+          onError={(e) => handleCategoryImageError(e)}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </div>

@@ -58,9 +58,26 @@ export default function Footer() {
           </Link>
         </div>
 
-        <p className="text-[11px] text-stone-400 font-medium">
-          &copy; {new Date().getFullYear()} Prime Cuts Pokhara. All rights reserved.
-        </p>
+        <div className="pt-1 flex flex-col items-center gap-2">
+          <p className="text-[11px] text-stone-400 font-medium">
+            &copy; {new Date().getFullYear()} Prime Cuts Pokhara. All rights reserved.
+          </p>
+          <a
+            href="https://www.devsparkco.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-[11px] text-stone-300 hover:text-white font-semibold transition-colors"
+          >
+            <img
+              src="/images/devspark-logo.jpg"
+              alt="Devspark"
+              className="w-4.5 h-4.5 rounded-full object-cover border border-white/10"
+            />
+            <span>
+              Developed by <span className="text-white font-bold underline-offset-2 hover:underline">Devspark</span>
+            </span>
+          </a>
+        </div>
       </div>
 
       {/* ========================================================= */}
@@ -183,15 +200,32 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="border-t border-[#222226] mt-10 pt-6 flex justify-between items-center text-sm text-stone-400">
-          <p>&copy; {new Date().getFullYear()} Prime Cuts - Butcher House. All rights reserved.</p>
-          <div className="flex space-x-5 items-center">
+        <div className="border-t border-[#222226] mt-10 pt-6 flex flex-wrap justify-between items-center gap-4 text-sm text-stone-400">
+          <div className="flex items-center gap-4">
+            <p>&copy; {new Date().getFullYear()} Prime Cuts - Butcher House. All rights reserved.</p>
+            <span className="text-stone-700">•</span>
             <Link to="/privacy-policy" className="hover:text-white transition-colors text-xs">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-white transition-colors text-xs">Terms & Conditions</Link>
             <Link to="/admin/login" className="hover:text-primary transition-colors text-stone-500" title="Admin Login">
               <Lock className="w-4 h-4" />
             </Link>
           </div>
+
+          <a
+            href="https://www.devsparkco.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs text-stone-300 hover:text-white font-semibold transition-colors"
+          >
+            <img
+              src="/images/devspark-logo.jpg"
+              alt="Devspark"
+              className="w-5 h-5 rounded-full object-cover border border-white/10"
+            />
+            <span>
+              Developed by <span className="text-white font-bold underline-offset-2 hover:underline">Devspark</span>
+            </span>
+          </a>
         </div>
       </div>
     </footer>

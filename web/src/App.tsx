@@ -6,6 +6,7 @@ import { useCart } from "./context/CartContext";
 
 import ShopLayout from "./components/ShopLayout";
 import ScrollToTop from "./components/ScrollToTop";
+import DisableDevtools from "./components/DisableDevtools";
 
 function CartRoute() {
   const { openCart } = useCart();
@@ -27,7 +28,6 @@ const OrdersPage = lazy(() => import("./pages/OrdersPage"));
 const OrderDetailPage = lazy(() => import("./pages/OrderDetailPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
-const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const MobileMenuPage = lazy(() => import("./pages/MobileMenuPage"));
@@ -46,7 +46,9 @@ const AdminOrderDetailPage = lazy(() => import("./pages/admin/AdminOrderDetailPa
 const AdminGuidePage = lazy(() => import("./pages/admin/AdminGuidePage"));
 const AdminProtectedRoute = lazy(() => import("./components/admin/AdminProtectedRoute"));
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const googleClientId =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "869996967103-hjnsmc4vl29bqdj34lq7fm6qnte1cdct.apps.googleusercontent.com";
 
 function PageLoadingFallback() {
   return (
@@ -59,7 +61,8 @@ function PageLoadingFallback() {
 
 export default function App() {
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
+    <GoogleOAuthProvider clientId={googleClientId} locale="en">
+      <DisableDevtools />
       <ScrollToTop />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
@@ -92,8 +95,7 @@ export default function App() {
             <Route path="/account" element={<AccountPage />} />
 
             <Route path="/login" element={<LoginPage />} />
-
-            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/register" element={<Navigate to="/login" replace />} />
 
             <Route path="/terms" element={<TermsPage />} />
 

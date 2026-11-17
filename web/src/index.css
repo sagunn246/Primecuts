@@ -24,13 +24,57 @@
   --font-display: 'Anton', 'Archivo Black', 'Mukta', system-ui, sans-serif;
 }
 
+*,
+*::before,
+*::after {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 body {
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior-y: none;
+}
+
+a,
+button,
+img,
+svg {
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Allow text selection inside inputs, textareas, chat/editable boxes, and explicit selectable elements */
+input,
+textarea,
+[contenteditable="true"],
+[contenteditable=""],
+.select-text,
+.select-text * {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.select-all,
+.select-all * {
+  -webkit-user-select: all;
+  user-select: all;
 }
 
 /* Hardware Accelerated Smooth Mobile Animations */

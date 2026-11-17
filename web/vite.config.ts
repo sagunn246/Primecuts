@@ -22,8 +22,9 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5001',
+        target: 'https://primecuts.rjflowers.com',
         changeOrigin: true,
+        secure: false,
         configure: (proxy) => {
           proxy.on('error', (err, req, res) => {
             if (!res || (res as any).headersSent) return;
@@ -34,7 +35,7 @@ export default defineConfig({
               setTimeout(() => {
                 if (!(res as any).headersSent) {
                   try {
-                    proxy.web(req, res, { target: 'http://127.0.0.1:5001' });
+                    proxy.web(req, res, { target: 'https://primecuts.rjflowers.com' });
                     return;
                   } catch {
                     // Fallthrough to 503 response
@@ -52,8 +53,9 @@ export default defineConfig({
         },
       },
       '/uploads': {
-        target: 'http://127.0.0.1:5001',
+        target: 'https://primecuts.rjflowers.com',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

@@ -3,6 +3,20 @@ import React from "react";
 export const FALLBACK_PRODUCT_IMAGE = "/images/hero_prime_meat.jpg";
 export const FALLBACK_CATEGORY_IMAGE = "/images/cat_chicken.jpg";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "https://primecuts.rjflowers.com/api"
+).replace(/\/+$/, "");
+
+function resolveHostedUploadPath(pathStr: string): string {
+  if (pathStr.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${pathStr}`;
+  }
+  if (pathStr.startsWith("/api/uploads/")) {
+    return `${API_BASE_URL}${pathStr.slice(4)}`;
+  }
+  return pathStr;
+}
+
 /**
  * Normalizes image URLs: handles null/undefined, ensures valid path format.
  */
@@ -19,10 +33,8 @@ export function getProductImageUrl(url?: string | null): string {
   ) {
     return trimmed;
   }
-  if (!trimmed.startsWith("/")) {
-    return `/${trimmed}`;
-  }
-  return trimmed;
+  const normalized = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return resolveHostedUploadPath(normalized);
 }
 
 /**
@@ -55,10 +67,8 @@ export function getCategoryImageUrl(url?: string | null): string {
   ) {
     return trimmed;
   }
-  if (!trimmed.startsWith("/")) {
-    return `/${trimmed}`;
-  }
-  return trimmed;
+  const normalized = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return resolveHostedUploadPath(normalized);
 }
 
 /**

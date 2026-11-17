@@ -150,18 +150,12 @@ export default function MobileMenuPage() {
                 Sign in to track orders, save delivery addresses & get member rewards.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="pt-1">
               <Link
                 to="/login"
-                className="py-2.5 px-3 bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs text-center"
+                className="block w-full py-2.5 px-3 bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs text-center"
               >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="py-2.5 px-3 bg-stone-50 hover:bg-stone-100 active:scale-95 text-stone-800 font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-stone-200 text-center"
-              >
-                Register
+                Continue with Google
               </Link>
             </div>
           </div>

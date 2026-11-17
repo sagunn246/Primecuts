@@ -27,8 +27,7 @@ export default function MobileAppNavBar() {
     location.pathname === "/my-orders";
   const isAccount =
     location.pathname === "/account" ||
-    location.pathname === "/login" ||
-    location.pathname === "/register";
+    location.pathname === "/login";
 
   return (
     <>

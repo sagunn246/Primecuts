@@ -76,7 +76,7 @@ export default function HomePage() {
     try {
       sessionStorage.removeItem("prime_cached_products");
       sessionStorage.removeItem("prime_cached_categories");
-    } catch {}
+    } catch { }
 
     // Live Dynamic Fetch direct from API & Database
     async function loadData() {
@@ -457,11 +457,10 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => handleCategorySelect("")}
-                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-transform border shrink-0 whitespace-nowrap cursor-pointer select-none active:scale-95 ${
-                  selectedCategory === ""
+                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-transform border shrink-0 whitespace-nowrap cursor-pointer select-none active:scale-95 ${selectedCategory === ""
                     ? "bg-primary border-primary text-white shadow-md shadow-primary/25"
                     : "bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-100"
-                }`}
+                  }`}
               >
                 All Meats ({products.length})
               </button>
@@ -479,11 +478,10 @@ export default function HomePage() {
                     key={catName}
                     type="button"
                     onClick={() => handleCategorySelect(catName)}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-transform border shrink-0 whitespace-nowrap cursor-pointer select-none active:scale-95 ${
-                      isSelected
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-transform border shrink-0 whitespace-nowrap cursor-pointer select-none active:scale-95 ${isSelected
                         ? "bg-primary border-primary text-white shadow-md shadow-primary/25"
                         : "bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-100"
-                    }`}
+                      }`}
                   >
                     {catName} {count > 0 && `(${count})`}
                   </button>
@@ -503,9 +501,8 @@ export default function HomePage() {
               >
                 <span>Sort: {currentSortLabel}</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-stone-500 transition-transform duration-200 ${
-                    showSortDropdown ? "rotate-180" : ""
-                  }`}
+                  className={`w-3.5 h-3.5 text-stone-500 transition-transform duration-200 ${showSortDropdown ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -519,11 +516,10 @@ export default function HomePage() {
                         setSortOption(opt.value);
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer ${
-                        sortOption === opt.value
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer ${sortOption === opt.value
                           ? "bg-primary text-white"
                           : "text-stone-700 hover:bg-stone-50"
-                      }`}
+                        }`}
                     >
                       {opt.label}
                     </button>

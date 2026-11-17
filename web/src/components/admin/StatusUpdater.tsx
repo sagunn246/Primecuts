@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function StatusUpdater({
   orderId,
   currentStatus,
-  onStatusChange
+  onStatusChange,
 }: {
   orderId: string;
   currentStatus: string;
@@ -12,6 +12,10 @@ export default function StatusUpdater({
 }) {
   const [status, setStatus] = useState(currentStatus);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setStatus(currentStatus);
+  }, [currentStatus]);
 
   const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value;
@@ -37,21 +41,21 @@ export default function StatusUpdater({
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="inline-flex items-center gap-2">
       <select
         value={status}
         onChange={handleStatusChange}
         disabled={loading}
-        className="px-4 py-2 bg-white border border-stone-300 rounded-lg font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 shadow-xs"
+        className="h-8.5 px-3 bg-stone-50 hover:bg-stone-100 border border-stone-200/90 rounded-lg text-xs font-semibold text-stone-900 focus:outline-none focus:border-stone-400 disabled:opacity-50 cursor-pointer"
       >
-        <option value="pending">Pending</option>
-        <option value="confirmed">Confirmed</option>
-        <option value="preparing">Preparing</option>
-        <option value="ready">Ready for Pickup / Delivery</option>
-        <option value="delivered">Delivered / Completed</option>
-        <option value="cancelled">Cancelled</option>
+        <option value="pending">Status: Pending</option>
+        <option value="confirmed">Status: Confirmed</option>
+        <option value="preparing">Status: Preparing</option>
+        <option value="ready">Status: Ready</option>
+        <option value="delivered">Status: Delivered</option>
+        <option value="cancelled">Status: Cancelled</option>
       </select>
-      {loading && <Loader2 className="w-5 h-5 animate-spin text-primary" />}
+      {loading && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
     </div>
   );
 }

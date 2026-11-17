@@ -135,20 +135,13 @@ export default function CheckoutPage() {
           Login Required to Order
         </h2>
         <p className="text-sm text-stone-500 font-medium mb-6 leading-relaxed">
-          Please login or register your account first to proceed with payment
-          and track your meat delivery.
+          Please sign in with Google to proceed with payment and track your meat delivery.
         </p>
         <Link
           to="/login?from=/checkout"
-          className="w-full py-3.5 bg-primary text-white font-black text-sm uppercase tracking-wider rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20 mb-3"
+          className="w-full py-3.5 bg-primary text-white font-black text-sm uppercase tracking-wider rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
         >
           Login to Continue
-        </Link>
-        <Link
-          to="/register?from=/checkout"
-          className="w-full py-3 bg-stone-100 text-stone-700 font-bold text-sm rounded-xl hover:bg-stone-200 transition-colors"
-        >
-          Create New Account
         </Link>
       </div>
     );
