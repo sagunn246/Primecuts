@@ -23,10 +23,6 @@ import {
   RotateCcw,
   ShieldCheck,
   Store,
-  Sunrise,
-  Sun,
-  Moon,
-  Zap,
 } from "lucide-react";
 
 import { useStoreStatus } from "../context/StoreStatusContext";
@@ -69,7 +65,7 @@ export default function CheckoutPage() {
     email: "",
     orderType: "delivery" as "pickup" | "delivery",
     paymentMethod: "cod" as "cod" | "qr",
-    deliveryTimeSlot: "Morning (7:00 AM - 10:00 AM)",
+    deliveryTimeSlot: "",
     address: "",
     latitude: null as number | null,
     longitude: null as number | null,
@@ -260,7 +256,7 @@ export default function CheckoutPage() {
     paymentStatus:
       formData.paymentMethod === "qr" && txnId ? "paid" : "pending",
     transactionId: txnId || undefined,
-    deliveryTimeSlot: formData.deliveryTimeSlot,
+    deliveryTimeSlot: formData.deliveryTimeSlot || undefined,
     deliveryCharge: formData.orderType === "delivery" ? DELIVERY_FEE : 0,
     address: formData.orderType === "delivery" ? formData.address : undefined,
     latitude:
@@ -372,9 +368,8 @@ export default function CheckoutPage() {
     );
   };
 
-  // Dynamic QR Payload encoded data for Nepal banking apps / wallets
-  const dynamicQrData = `PRIME-CUTS|AMOUNT:${grandTotal.toFixed(2)}|REF:${qrRefCode}|NAME:${encodeURIComponent(formData.name || "Customer")}|PHONE:${formData.phone}`;
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dynamicQrData)}`;
+  // Official Merchant Payment QR Image
+  const qrImageUrl = "/images/payment-qr.jpg";
 
   return (
     <div className="min-h-screen bg-[#fafafa] pt-[max(calc(env(safe-area-inset-top,0px)+34px),46px)] pb-36 md:py-12">
@@ -769,115 +764,10 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* 3. Delivery Time Slot */}
-              {formData.orderType === "delivery" && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base md:text-lg font-black text-black">
-                      3. Preferred Delivery Time
-                    </h3>
-                    <span className="text-[11px] font-bold text-stone-400">
-                      Pokhara Delivery
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {[
-                      {
-                        id: "Morning (7:00 AM - 10:00 AM)",
-                        icon: Sunrise,
-                        title: "Morning Batch",
-                        time: "7 AM - 10 AM",
-                        sub: "Fresh morning slaughter",
-                      },
-                      {
-                        id: "Afternoon (1:00 PM - 4:00 PM)",
-                        icon: Sun,
-                        title: "Afternoon",
-                        time: "1 PM - 4 PM",
-                        sub: "Lunch & afternoon prep",
-                      },
-                      {
-                        id: "Evening (5:00 PM - 8:00 PM)",
-                        icon: Moon,
-                        title: "Evening Batch",
-                        time: "5 PM - 8 PM",
-                        sub: "Dinner & evening BBQ",
-                      },
-                      {
-                        id: "Express (Next 45 Mins)",
-                        icon: Zap,
-                        title: "Express Cut",
-                        time: "Within 45 mins",
-                        sub: "Immediate rider dispatch",
-                      },
-                    ].map((slot) => {
-                      const isSelected = formData.deliveryTimeSlot === slot.id;
-                      const IconComponent = slot.icon;
-                      return (
-                        <button
-                          key={slot.id}
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              deliveryTimeSlot: slot.id,
-                            }))
-                          }
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center sm:flex-col sm:items-start justify-between gap-3 ${
-                            isSelected
-                              ? "border-primary bg-red-50/50 text-zinc-900"
-                              : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 sm:w-full sm:justify-between">
-                            <div
-                              className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
-                                isSelected
-                                  ? "bg-primary text-white border-primary"
-                                  : "bg-zinc-100 text-zinc-700 border-zinc-200"
-                              }`}
-                            >
-                              <IconComponent className="w-4 h-4" />
-                            </div>
-                            <div className="sm:hidden">
-                              <div className="font-semibold text-xs text-zinc-900 leading-tight">
-                                {slot.title}
-                              </div>
-                              <div className="text-[11px] font-semibold text-primary leading-tight mt-0.5">
-                                {slot.time}
-                              </div>
-                              <div className="text-[10px] text-zinc-500 font-normal leading-tight mt-0.5">
-                                {slot.sub}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="hidden sm:block mt-1">
-                            <div className="font-semibold text-xs text-zinc-900 leading-tight">
-                              {slot.title}
-                            </div>
-                            <div className="text-[11px] font-semibold text-primary leading-tight mt-0.5">
-                              {slot.time}
-                            </div>
-                            <div className="text-[10px] text-zinc-500 font-normal leading-tight mt-1">
-                              {slot.sub}
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shrink-0 sm:self-end">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* 4. Payment Method */}
+              {/* 3. Payment Method */}
               <div>
                 <h3 className="text-base md:text-lg font-black text-black mb-3">
-                  4. Payment Method
+                  3. Payment Method
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -921,10 +811,10 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* 5. Order Notes */}
+              {/* 4. Order Notes */}
               <div>
                 <h3 className="text-base md:text-lg font-black text-black mb-3">
-                  5. Order Notes (Optional)
+                  4. Order Notes (Optional)
                 </h3>
                 <div className="relative">
                   <textarea

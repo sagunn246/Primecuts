@@ -100,7 +100,7 @@ export function AdminLiveProvider({ children }: { children: React.ReactNode }) {
             });
 
             // Trigger native OS notification in Windows Action Center / Mobile lockscreen
-            triggerDeviceNotification(`🛎 New Order — ${latestOrder.orderNumber}`, {
+            triggerDeviceNotification(`New Order — ${latestOrder.orderNumber}`, {
               body: `${latestOrder.customerInfo.name} placed a new order for Rs. ${latestOrder.totalAmount.toFixed(2)}`,
               url: `/admin/orders`,
               tag: `order-${latestOrder.orderNumber}`,

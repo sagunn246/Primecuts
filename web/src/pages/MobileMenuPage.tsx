@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import {
   Sliders,
   Check,
   ShoppingBag,
+  Loader2,
+  Send,
 } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import { useStoreStatus } from "../context/StoreStatusContext";
@@ -28,6 +30,12 @@ import { useCart } from "../context/CartContext";
 import { usePWA } from "../context/PWAContext";
 import SEO from "../components/SEO";
 import NotificationBell from "../components/NotificationBell";
+import {
+  getPushNotificationState,
+  registerDevicePushSubscription,
+  unsubscribeDevicePushSubscription,
+  triggerDeviceNotification,
+} from "../utils/deviceNotification";
 
 export default function MobileMenuPage() {
   const navigate = useNavigate();
@@ -43,6 +51,20 @@ export default function MobileMenuPage() {
   const [orderAlerts, setOrderAlerts] = useState<boolean>(() => {
     return localStorage.getItem("pref_order_alerts") !== "false";
   });
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
+  const [requiresIOSInstall, setRequiresIOSInstall] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushStatusMsg, setPushStatusMsg] = useState("");
+  const [pushErrorMsg, setPushErrorMsg] = useState("");
+
+  useEffect(() => {
+    getPushNotificationState().then((state) => {
+      setPushSubscribed(state.subscribed);
+      setPushPermission(state.permission);
+      setRequiresIOSInstall(state.requiresIOSInstall);
+    });
+  }, [user]);
 
   const toggleSound = () => {
     const nextVal = !soundEnabled;
@@ -54,6 +76,79 @@ export default function MobileMenuPage() {
     const nextVal = !orderAlerts;
     setOrderAlerts(nextVal);
     localStorage.setItem("pref_order_alerts", String(nextVal));
+  };
+
+  const handleToggleDevicePush = async () => {
+    setPushBusy(true);
+    setPushErrorMsg("");
+    setPushStatusMsg("");
+    try {
+      if (pushSubscribed) {
+        await unsubscribeDevicePushSubscription();
+        setPushSubscribed(false);
+        setPushStatusMsg("Mobile push notifications turned off.");
+      } else {
+        const sub = await registerDevicePushSubscription("customer", user?.id);
+        setPushSubscribed(true);
+        setPushPermission("granted");
+        setPushStatusMsg("Mobile push notifications enabled.");
+        await triggerDeviceNotification("Prime Cuts Alerts Enabled", {
+          body: "Order status updates will now appear in your device notification center.",
+          url: "/orders",
+          tag: "prime-cuts-welcome",
+        });
+        if (sub?.endpoint) {
+          fetch("/api/push/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "customer",
+              userId: user?.id,
+              endpoint: sub.endpoint,
+              title: "Prime Cuts Alerts Active",
+              body: "You are subscribed to live mobile notifications.",
+            }),
+          }).catch(() => {});
+        }
+      }
+    } catch (err: any) {
+      setPushErrorMsg(err.message || "Could not update push notifications.");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const handleTestMobilePush = async () => {
+    setPushBusy(true);
+    setPushErrorMsg("");
+    setPushStatusMsg("");
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      await triggerDeviceNotification("Prime Cuts — Test Alert", {
+        body: "Live order updates will show directly in your phone notification center.",
+        url: "/orders",
+      });
+      const res = await fetch("/api/push/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "customer",
+          userId: user?.id,
+          endpoint: sub?.endpoint,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPushStatusMsg("Test notification sent to your device.");
+      } else {
+        setPushErrorMsg(data.message || data.error || "Test failed.");
+      }
+    } catch (err: any) {
+      setPushErrorMsg(err.message || "Failed to send test notification.");
+    } finally {
+      setPushBusy(false);
+    }
   };
 
   const handleLogout = () => {
@@ -310,6 +405,71 @@ export default function MobileMenuPage() {
                   }`}
                 />
               </button>
+            </div>
+
+            {/* Mobile Notification Center (Web Push) Toggle */}
+            <div className="py-2.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Smartphone className="w-4 h-4 text-primary" />
+                  <div>
+                    <span className="text-xs font-bold text-stone-900 block">
+                      Mobile Notification Center
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">
+                      {requiresIOSInstall
+                        ? "Add app to Home Screen first (iOS)"
+                        : pushPermission === "denied"
+                        ? "Blocked in browser/phone settings"
+                        : pushSubscribed
+                        ? "Active — Alerts appear in phone tray"
+                        : "Receive push alerts even when app is closed"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={pushBusy || pushPermission === "denied"}
+                  onClick={handleToggleDevicePush}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer disabled:opacity-50 ${
+                    pushSubscribed ? "bg-emerald-600" : "bg-stone-300"
+                  }`}
+                >
+                  {pushBusy ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white mx-auto" />
+                  ) : (
+                    <span
+                      className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${
+                        pushSubscribed ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  )}
+                </button>
+              </div>
+
+              {pushSubscribed && (
+                <button
+                  type="button"
+                  disabled={pushBusy}
+                  onClick={handleTestMobilePush}
+                  className="w-full py-2 px-3 rounded-xl bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-800 font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5 text-primary" />
+                  <span>Send Test Notification to Phone</span>
+                </button>
+              )}
+
+              {pushStatusMsg && (
+                <p className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
+                  {pushStatusMsg}
+                </p>
+              )}
+
+              {pushErrorMsg && (
+                <p className="text-[11px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+                  {pushErrorMsg}
+                </p>
+              )}
             </div>
           </div>
         </div>

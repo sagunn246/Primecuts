@@ -1,16 +1,28 @@
 import { useEffect, useState, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BellOff, CheckCircle2, ShieldAlert, Loader2, Clock, ChefHat, PackageCheck, XCircle } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  CheckCircle2,
+  ShieldAlert,
+  Loader2,
+  Clock,
+  ChefHat,
+  PackageCheck,
+  XCircle,
+  Send,
+  Smartphone,
+  ShoppingBag,
+  X,
+} from "lucide-react";
 import { UserContext } from "../context/UserContext";
-import { motion, AnimatePresence } from "framer-motion";
-import { registerDevicePushSubscription, triggerDeviceNotification } from "../utils/deviceNotification";
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-}
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  getPushNotificationState,
+  registerDevicePushSubscription,
+  unsubscribeDevicePushSubscription,
+  triggerDeviceNotification,
+} from "../utils/deviceNotification";
 
 export interface NotificationBellProps {
   type: "customer" | "admin";
@@ -36,27 +48,47 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
   const user = userContext ? userContext.user : null;
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [subscribed, setSubscribed] = useState(false);
+  const [requiresIOSInstall, setRequiresIOSInstall] = useState(false);
+  const [supported, setSupported] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [testFeedback, setTestFeedback] = useState("");
   const [error, setError] = useState("");
-  const [pwaActive, setPwaActive] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [fetchingNotifications, setFetchingNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const lastUnreadCountRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchUnreadCount = async () => {
     if (type === "customer" && !user) {
       setUnreadCount(0);
+      lastUnreadCountRef.current = 0;
       return;
     }
     try {
-      const url = type === "admin" ? "/api/admin/notifications/unread-count" : "/api/notifications/unread-count";
+      const url =
+        type === "admin"
+          ? "/api/admin/notifications/unread-count"
+          : "/api/notifications/unread-count";
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
-          setUnreadCount(data.count || 0);
+          const nextCount = Number(data.count || 0);
+          if (
+            lastUnreadCountRef.current !== null &&
+            nextCount > lastUnreadCountRef.current &&
+            type === "customer"
+          ) {
+            triggerDeviceNotification("Prime Cuts — Order Update", {
+              body: "You have a new update on your meat order. Tap to view details.",
+              url: "/orders",
+              tag: `prime-cuts-unread-${nextCount}`,
+            }).catch(() => {});
+          }
+          lastUnreadCountRef.current = nextCount;
+          setUnreadCount(nextCount);
         }
       }
     } catch (err) {
@@ -65,6 +97,10 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
   };
 
   const fetchNotifications = async () => {
+    if (type === "customer" && !user) {
+      setNotifications([]);
+      return;
+    }
     setFetchingNotifications(true);
     try {
       const url = type === "admin" ? "/api/admin/notifications" : "/api/notifications";
@@ -84,7 +120,10 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      const url = type === "admin" ? `/api/admin/notifications/${id}/read` : `/api/notifications/${id}/read`;
+      const url =
+        type === "admin"
+          ? `/api/admin/notifications/${id}/read`
+          : `/api/notifications/${id}/read`;
       const res = await fetch(url, { method: "PATCH" });
       if (res.ok) {
         setNotifications((prev) =>
@@ -99,7 +138,10 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
 
   const handleMarkAllAsRead = async () => {
     try {
-      const url = type === "admin" ? "/api/admin/notifications/read-all" : "/api/notifications/read-all";
+      const url =
+        type === "admin"
+          ? "/api/admin/notifications/read-all"
+          : "/api/notifications/read-all";
       const res = await fetch(url, { method: "PATCH" });
       if (res.ok) {
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -110,48 +152,51 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
     }
   };
 
+  const checkStatus = async () => {
+    const state = await getPushNotificationState();
+    setSupported(state.supported);
+    setRequiresIOSInstall(state.requiresIOSInstall);
+    setPermission(state.permission);
+    setSubscribed(state.subscribed);
+    fetchUnreadCount();
+  };
+
   useEffect(() => {
     if (isOpen) {
+      checkStatus();
       fetchNotifications();
     }
   }, [isOpen]);
 
-  const checkStatus = async () => {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    setPermission(Notification.permission);
-    fetchUnreadCount();
-
-    if ("serviceWorker" in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) {
-        const sub = await reg.pushManager.getSubscription();
-        setSubscribed(!!sub);
-      }
-    }
-  };
-
   useEffect(() => {
-    if (type === "customer" && !user) {
-      setUnreadCount(0);
-      return;
-    }
-
     checkStatus();
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
-    
+
+    const handlePushReceived = () => {
+      fetchUnreadCount();
+      if (isOpen) fetchNotifications();
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
     window.addEventListener("focus", fetchUnreadCount);
-    
+    window.addEventListener("primecuts:push-received", handlePushReceived);
+
     const interval = setInterval(fetchUnreadCount, 20000);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       window.removeEventListener("focus", fetchUnreadCount);
+      window.removeEventListener("primecuts:push-received", handlePushReceived);
       clearInterval(interval);
     };
   }, [user, type]);
@@ -159,11 +204,38 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
   const handleSubscribe = async () => {
     setLoading(true);
     setError("");
+    setTestFeedback("");
     try {
-      await registerDevicePushSubscription(type, type === "customer" ? user?.id : undefined);
+      const sub = await registerDevicePushSubscription(
+        type,
+        type === "customer" ? user?.id : undefined
+      );
       setSubscribed(true);
       setPermission("granted");
       fetchUnreadCount();
+
+      await triggerDeviceNotification("Prime Cuts Alerts Enabled", {
+        body:
+          type === "admin"
+            ? "You will now receive instant order alerts in your device notification center."
+            : "You will now receive live meat order updates in your phone notification center.",
+        url: type === "admin" ? "/admin/orders" : "/orders",
+        tag: "prime-cuts-welcome",
+      });
+
+      if (sub?.endpoint) {
+        await fetch("/api/push/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            userId: type === "customer" ? user?.id : undefined,
+            endpoint: sub.endpoint,
+            title: "Prime Cuts Alerts Active",
+            body: "Mobile push notifications are connected to your device notification center.",
+          }),
+        }).catch(() => { });
+      }
     } catch (err: any) {
       console.error("[Bell] Registration failed:", err);
       setError(err.message || "Failed to enable notifications.");
@@ -175,30 +247,36 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
   const handleTestPush = async () => {
     setLoading(true);
     setError("");
+    setTestFeedback("");
     try {
-      // Direct local trigger for immediate OS tray / Action center display & chime
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+
       await triggerDeviceNotification(
         type === "admin" ? "Prime Cuts — Admin Alert" : "Prime Cuts — Order Update",
         {
-          body: type === "admin"
-            ? "Test notification: Real-time alerts are active for all new customer orders."
-            : "Test notification: You will receive live status updates right here on your device.",
+          body:
+            type === "admin"
+              ? "Test alert: Real-time notifications are working on your device."
+              : "Test alert: Live order updates will appear in your mobile notification center.",
           url: type === "admin" ? "/admin/orders" : "/orders",
         }
       );
 
-      // Server-side WebPush dispatch
       const res = await fetch("/api/push/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type,
           userId: type === "customer" ? user?.id : undefined,
+          endpoint: sub?.endpoint,
         }),
       });
       const data = await res.json();
-      if (!data.success) {
-        console.warn("Backend push dispatch notice:", data.error);
+      if (data.success) {
+        setTestFeedback("Test alert sent to your notification center.");
+      } else {
+        setError(data.message || data.error || "Push test could not reach server.");
       }
     } catch (err: any) {
       setError(err.message || "Test push failed.");
@@ -210,17 +288,9 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
   const handleUnsubscribe = async () => {
     setLoading(true);
     setError("");
+    setTestFeedback("");
     try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
-      if (sub) {
-        await sub.unsubscribe();
-        await fetch("/api/push/subscribe", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint: sub.endpoint }),
-        });
-      }
+      await unsubscribeDevicePushSubscription();
       setSubscribed(false);
     } catch (err: any) {
       console.error("[Bell] Unsubscribe failed:", err);
@@ -230,68 +300,81 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
     }
   };
 
-  let badgeColor = "bg-stone-500";
-  let statusMessage = "Disabled";
+  let badgeColor = "bg-stone-400";
+  let statusMessage = "Off";
 
-  if (!pwaActive) {
+  if (requiresIOSInstall) {
     badgeColor = "bg-amber-500";
-    statusMessage = "Dev Mode";
+    statusMessage = "Add to Home";
   } else if (permission === "denied") {
     badgeColor = "bg-red-500";
     statusMessage = "Blocked";
   } else if (subscribed && permission === "granted") {
-    badgeColor = "bg-green-500";
+    badgeColor = "bg-emerald-500";
     statusMessage = "Active";
   } else {
-    badgeColor = "bg-stone-500";
-    statusMessage = "Ready to Enable";
+    badgeColor = "bg-stone-400";
+    statusMessage = "Enable";
   }
 
   return (
-    <div ref={containerRef} className="relative inline-block">
+    <div ref={containerRef} className="relative inline-flex items-center">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 transition-colors focus:outline-none cursor-pointer ${
-          theme === "light" ? "text-stone-700 hover:text-stone-900" : "text-white hover:text-primary"
-        }`}
-        title="Notification Settings"
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className={`relative h-9 w-9 rounded-xl flex items-center justify-center transition-all active:scale-95 focus:outline-none cursor-pointer ${theme === "light"
+            ? "bg-stone-100 hover:bg-stone-200/80 border border-stone-200/90 text-stone-800"
+            : "bg-zinc-800/90 hover:bg-zinc-700 border border-zinc-700/80 text-white"
+          }`}
+        title="Notifications & Push Alerts"
+        aria-label="Notifications"
       >
-        <motion.div
-          animate={subscribed ? { rotate: [0, -10, 10, -10, 10, 0] } : {}}
-          transition={{ repeat: Infinity, repeatDelay: 10, duration: 0.6 }}
-        >
-          {permission === "denied" ? (
-            <BellOff className="w-5 h-5 text-red-500" />
-          ) : (
-            <Bell className={`w-5 h-5 ${subscribed ? "text-primary fill-primary/20" : theme === "light" ? "text-stone-800" : "text-white"}`} />
-          )}
-        </motion.div>
+        {permission === "denied" ? (
+          <BellOff className="w-4 h-4 text-red-500 stroke-[2.2]" />
+        ) : (
+          <Bell
+            className={`w-4 h-4 stroke-[2.2] ${subscribed
+                ? "text-primary"
+                : theme === "light"
+                  ? "text-stone-800"
+                  : "text-white"
+              }`}
+          />
+        )}
 
         {unreadCount > 0 ? (
-          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[#111111] animate-pulse">
-            {unreadCount}
+          <span className="absolute -top-1 -right-1 bg-primary text-white text-[9px] font-black min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white/20 tabular-nums shadow-xs">
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : (
-          <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full border border-[#111] ${badgeColor}`} />
+          <span
+            className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full border ${theme === "light" ? "border-white" : "border-[#111]"
+              } ${badgeColor}`}
+          />
         )}
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className={`absolute mt-2 bg-stone-950/95 border border-stone-800 rounded-2xl p-4 shadow-2xl z-50 max-md:fixed max-md:top-16 max-md:left-4 max-md:right-4 max-md:w-auto w-80 text-white ${
-              type === "admin" ? "left-0" : "right-0"
-            }`}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ duration: 0.14 }}
+            className="fixed top-15 left-3 right-3 w-auto md:absolute md:top-full md:right-0 md:left-auto md:mt-2 md:w-92 bg-stone-950/98 backdrop-blur-xl border border-stone-800 rounded-2xl p-4 shadow-2xl z-[9999] text-white"
           >
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm tracking-wide">Notifications</span>
+                <Bell className="w-4 h-4 text-primary shrink-0" />
+                <span className="font-extrabold text-sm tracking-wide">
+                  Notifications
+                </span>
                 {unreadCount > 0 && (
                   <button
+                    type="button"
                     onClick={handleMarkAllAsRead}
                     className="text-[10px] text-stone-400 hover:text-white underline transition-colors cursor-pointer"
                   >
@@ -299,111 +382,161 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
                   </button>
                 )}
               </div>
-              <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full ${
-                subscribed ? "bg-green-500/10 text-green-400" : "bg-white/10 text-stone-400"
-              }`}>
-                {statusMessage}
-              </span>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full ${subscribed
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : permission === "denied"
+                        ? "bg-red-500/15 text-red-400"
+                        : "bg-white/10 text-stone-300"
+                    }`}
+                >
+                  {statusMessage}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 rounded-lg text-stone-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  aria-label="Close notifications"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="py-4 space-y-3">
-              {permission === "denied" ? (
-                <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-3 flex gap-2 text-red-400">
-                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                  <p className="text-xs font-semibold leading-normal">
-                    Permission blocked. Please check browser settings.
+            {/* Push Control Banner */}
+            <div className="pt-3 pb-2 space-y-2">
+              {requiresIOSInstall ? (
+                <div className="bg-amber-950/30 border border-amber-800/40 rounded-xl p-3 flex gap-2 text-amber-300">
+                  <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-medium leading-relaxed">
+                    On iPhone/iPad: tap <strong>Share</strong> and select{" "}
+                    <strong>Add to Home Screen</strong>, then open Prime Cuts from
+                    your Home Screen to enable mobile push notifications.
                   </p>
                 </div>
-              ) : subscribed ? (
-                fetchingNotifications ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="text-center py-6 text-stone-500">
-                    <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-stone-600" />
-                    <p className="text-xs font-semibold">
-                      {type === "admin" ? "No new order notifications." : "No notifications yet."}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="max-h-72 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                    {notifications.map((notif) => {
-                      if (type === "admin") {
-                        let statusColor = "border-l-4 border-amber-500 bg-amber-500/5 hover:bg-amber-500/10";
-                        let StatusIcon = Clock;
-                        
-                        if (notif.order?.status === "cancelled" || notif.type === "ORDER_CANCELLED_BY_USER") {
-                          statusColor = "border-l-4 border-red-500 bg-red-500/5 hover:bg-red-500/10";
-                          StatusIcon = XCircle;
-                        }
+              ) : permission === "denied" ? (
+                <div className="bg-red-950/25 border border-red-900/40 rounded-xl p-3 flex gap-2 text-red-400">
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-semibold leading-normal">
+                    Notifications are blocked. Allow notifications in your browser or
+                    device app settings.
+                  </p>
+                </div>
+              ) : !supported ? (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-[11px] text-stone-300">
+                  Push notifications are not supported on this browser.
+                </div>
+              ) : !subscribed ? (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-2.5">
+                  <p className="text-[11px] text-stone-300 leading-normal">
+                    Turn on push notifications to get instant alerts in your mobile
+                    notification center.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleSubscribe}
+                    className="w-full py-2.5 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-wider hover:bg-primary/90 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Bell className="w-3.5 h-3.5" />
+                        <span>Enable Notifications</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleTestPush}
+                    className="flex-1 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5 text-primary" />
+                        <span>Test Alert</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleUnsubscribe}
+                    className="py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-[11px] cursor-pointer transition-colors"
+                  >
+                    Turn Off
+                  </button>
+                </div>
+              )}
 
-                        const targetUrl = notif.order ? `/admin/orders/${notif.order.id}` : "/admin/orders";
+              {testFeedback && (
+                <div className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/30 p-2 rounded-xl border border-emerald-800/40 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{testFeedback}</span>
+                </div>
+              )}
 
-                        return (
-                          <Link
-                            key={notif.id}
-                            to={targetUrl}
-                            onClick={() => {
-                              setIsOpen(false);
-                              handleMarkAsRead(notif.id);
-                            }}
-                            className={`block rounded-xl p-3 border transition-all text-left ${statusColor} ${
-                              notif.read ? "opacity-60 border-white/5" : "border-white/20 shadow-md shadow-white/5"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start gap-2">
-                              <span className="text-[11px] font-black text-white flex items-center gap-1.5 leading-tight">
-                                <StatusIcon className="w-3.5 h-3.5 shrink-0 text-white/90" />
-                                {notif.title}
-                                {!notif.read && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 self-center" />
-                                )}
-                              </span>
-                              <span className="text-[9px] text-stone-500 shrink-0 font-medium">
-                                {formatTimeAgo(notif.createdAt)}
-                              </span>
-                            </div>
-                            
-                            <p className="text-[10px] text-stone-300 font-bold mt-1.5">
-                              {notif.order?.customerName || "Customer"}
-                            </p>
-                            <p className="text-[10px] text-stone-400 mt-0.5 leading-normal whitespace-pre-line">
-                              {notif.message}
-                            </p>
+              {error && (
+                <div className="text-[10px] text-red-400 font-semibold bg-red-950/25 p-2 rounded-xl border border-red-900/30 flex items-start gap-1.5 leading-normal">
+                  <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
 
-                            {notif.order && (
-                              <div className="flex gap-1.5 mt-2">
-                                <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/5 text-stone-400">
-                                  Rs. {notif.order.total.toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-                          </Link>
-                        );
-                      }
+            {/* Notification Inbox */}
+            <div className="pt-2 border-t border-white/10">
+              {type === "customer" && !user ? (
+                <div className="text-center py-4 space-y-2">
+                  <p className="text-xs text-stone-400">
+                    Sign in to view your order notifications and history.
+                  </p>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="inline-block px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold text-white"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              ) : fetchingNotifications ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="text-center py-5 text-stone-500">
+                  <CheckCircle2 className="w-7 h-7 mx-auto mb-1.5 text-stone-600" />
+                  <p className="text-xs font-semibold">
+                    {type === "admin"
+                      ? "No new order notifications."
+                      : "No order notifications yet."}
+                  </p>
+                </div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {notifications.map((notif) => {
+                    if (type === "admin") {
+                      const isCancelNotif =
+                        notif.type === "ORDER_CANCELLED_BY_USER" ||
+                        notif.type === "ORDER_CANCELLED";
 
-                      let statusColor = "border-l-4 border-stone-600 bg-stone-900/40 hover:bg-stone-900/60";
-                      let StatusIcon = Clock;
+                      const statusColor = isCancelNotif
+                        ? "border-l-4 border-red-500 bg-red-500/5 hover:bg-red-500/10"
+                        : "border-l-4 border-amber-500 bg-amber-500/5 hover:bg-amber-500/10";
+                      const StatusIcon = isCancelNotif ? XCircle : ShoppingBag;
 
-                      if (notif.type === "ORDER_PREPARING") {
-                        statusColor = "border-l-4 border-amber-500 bg-amber-500/5 hover:bg-amber-500/10";
-                        StatusIcon = ChefHat;
-                      } else if (notif.type === "ORDER_READY") {
-                        statusColor = "border-l-4 border-purple-500 bg-purple-500/5 hover:bg-purple-500/10";
-                        StatusIcon = PackageCheck;
-                      } else if (notif.type === "ORDER_COMPLETED") {
-                        statusColor = "border-l-4 border-green-500 bg-green-500/5 hover:bg-green-500/10";
-                        StatusIcon = CheckCircle2;
-                      } else if (notif.type === "ORDER_CANCELLED") {
-                        statusColor = "border-l-4 border-red-500 bg-red-500/5 hover:bg-red-500/10";
-                        StatusIcon = XCircle;
-                      } else if (notif.type === "ORDER_CONFIRMED") {
-                        statusColor = "border-l-4 border-blue-500 bg-blue-500/5 hover:bg-blue-500/10";
-                        StatusIcon = CheckCircle2;
-                      }
-
-                      const targetUrl = notif.order ? `/orders/${notif.order.orderNumber}` : "/orders";
+                      const targetUrl = notif.order
+                        ? `/admin/orders/${notif.order.id}`
+                        : "/admin/orders";
 
                       return (
                         <Link
@@ -413,78 +546,123 @@ export function NotificationBell({ type, theme = "dark" }: NotificationBellProps
                             setIsOpen(false);
                             handleMarkAsRead(notif.id);
                           }}
-                          className={`block rounded-xl p-3 border transition-all text-left ${statusColor} ${
-                            notif.read ? "opacity-60 border-white/5" : "border-white/20 shadow-md shadow-white/5"
-                          }`}
+                          className={`block rounded-xl p-3 border transition-all text-left ${statusColor} ${notif.read
+                              ? "opacity-60 border-white/5"
+                              : "border-white/20 shadow-md shadow-white/5"
+                            }`}
                         >
                           <div className="flex justify-between items-start gap-2">
                             <span className="text-[11px] font-black text-white flex items-center gap-1.5 leading-tight">
-                              <StatusIcon className="w-3.5 h-3.5 shrink-0" />
-                              {notif.title}
+                              <StatusIcon className="w-3.5 h-3.5 shrink-0 text-primary" />
+                              <span>{notif.title}</span>
                               {!notif.read && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 self-center" />
                               )}
                             </span>
-                            <span className="text-[9px] text-stone-500 shrink-0 font-medium">
+                            <span className="text-[9px] text-stone-400 shrink-0 font-medium">
                               {formatTimeAgo(notif.createdAt)}
                             </span>
                           </div>
-                          
-                          <p className="text-[10px] text-stone-300 mt-1.5 font-semibold leading-normal">
+
+                          <p className="text-[10px] text-stone-200 font-bold mt-1.5">
+                            {notif.order?.customerName || "Customer"}
+                          </p>
+                          <p className="text-[10px] text-stone-400 mt-0.5 leading-normal whitespace-pre-line">
                             {notif.message}
                           </p>
 
                           {notif.order && (
                             <div className="flex gap-1.5 mt-2">
-                              <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/5 text-stone-400">
-                                Status: {notif.order.status}
+                              <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/10 text-stone-300">
+                                Rs. {Number(notif.order.total || 0).toFixed(2)}
                               </span>
-                              <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/5 text-stone-400">
-                                Payment: {notif.order.paymentStatus}
-                              </span>
+                              {notif.order.status && (
+                                <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/10 text-stone-300">
+                                  {notif.order.status}
+                                </span>
+                              )}
                             </div>
                           )}
                         </Link>
                       );
-                    })}
-                  </div>
-                )
-              ) : (
-                <p className="text-xs text-stone-400 leading-normal">
-                  Subscribe to receive native push notifications on status changes, new orders, and payment updates.
-                </p>
+                    }
+
+                    let statusColor =
+                      "border-l-4 border-stone-600 bg-stone-900/40 hover:bg-stone-900/60";
+                    let StatusIcon = ShoppingBag;
+
+                    if (notif.type === "ORDER_PREPARING") {
+                      statusColor =
+                        "border-l-4 border-amber-500 bg-amber-500/5 hover:bg-amber-500/10";
+                      StatusIcon = ChefHat;
+                    } else if (notif.type === "ORDER_READY") {
+                      statusColor =
+                        "border-l-4 border-purple-500 bg-purple-500/5 hover:bg-purple-500/10";
+                      StatusIcon = PackageCheck;
+                    } else if (notif.type === "ORDER_COMPLETED") {
+                      statusColor =
+                        "border-l-4 border-green-500 bg-green-500/5 hover:bg-green-500/10";
+                      StatusIcon = CheckCircle2;
+                    } else if (notif.type === "ORDER_CANCELLED") {
+                      statusColor =
+                        "border-l-4 border-red-500 bg-red-500/5 hover:bg-red-500/10";
+                      StatusIcon = XCircle;
+                    } else if (notif.type === "ORDER_CONFIRMED") {
+                      statusColor =
+                        "border-l-4 border-blue-500 bg-blue-500/5 hover:bg-blue-500/10";
+                      StatusIcon = CheckCircle2;
+                    }
+
+                    const targetUrl = notif.order
+                      ? `/orders/${notif.order.orderNumber}`
+                      : "/orders";
+
+                    return (
+                      <Link
+                        key={notif.id}
+                        to={targetUrl}
+                        onClick={() => {
+                          setIsOpen(false);
+                          handleMarkAsRead(notif.id);
+                        }}
+                        className={`block rounded-xl p-3 border transition-all text-left ${statusColor} ${notif.read
+                            ? "opacity-60 border-white/5"
+                            : "border-white/20 shadow-md shadow-white/5"
+                          }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-[11px] font-black text-white flex items-center gap-1.5 leading-tight">
+                            <StatusIcon className="w-3.5 h-3.5 shrink-0 text-primary" />
+                            <span>{notif.title}</span>
+                            {!notif.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 self-center" />
+                            )}
+                          </span>
+                          <span className="text-[9px] text-stone-400 shrink-0 font-medium">
+                            {formatTimeAgo(notif.createdAt)}
+                          </span>
+                        </div>
+
+                        <p className="text-[10px] text-stone-300 mt-1.5 font-semibold leading-normal">
+                          {notif.message}
+                        </p>
+
+                        {notif.order && (
+                          <div className="flex gap-1.5 mt-2">
+                            <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/10 text-stone-300">
+                              Status: {notif.order.status}
+                            </span>
+                            <span className="text-[8px] uppercase font-black px-1.5 py-0.5 rounded bg-white/10 text-stone-300">
+                              Payment: {notif.order.paymentStatus}
+                            </span>
+                          </div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
             </div>
-
-            {error && (
-              <div className="text-[10px] text-red-400 font-semibold bg-red-950/25 p-2 rounded-xl border border-red-900/30 mb-3 flex items-start gap-1.5 leading-normal">
-                <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {permission !== "denied" && (
-              <div className="space-y-2">
-
-                <button
-                  disabled={loading}
-                  onClick={subscribed ? handleUnsubscribe : handleSubscribe}
-                  className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    subscribed
-                      ? "bg-stone-800 hover:bg-stone-700 text-stone-300"
-                      : "bg-primary text-white font-black hover:bg-primary/90 shadow-sm"
-                  }`}
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : subscribed ? (
-                    "Unsubscribe"
-                  ) : (
-                    "Enable Device Notifications"
-                  )}
-                </button>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

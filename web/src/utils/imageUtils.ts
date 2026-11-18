@@ -3,9 +3,12 @@ import React from "react";
 export const FALLBACK_PRODUCT_IMAGE = "/images/hero_prime_meat.jpg";
 export const FALLBACK_CATEGORY_IMAGE = "/images/cat_chicken.jpg";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "https://primecuts.rjflowers.com/api"
+const rawApiUrl = (
+  import.meta.env.VITE_API_URL || "https://api.primecutsbutcher.com"
 ).replace(/\/+$/, "");
+
+const API_ORIGIN = rawApiUrl.replace(/\/api$/i, "");
+const API_BASE_URL = `${API_ORIGIN}/api`;
 
 function resolveHostedUploadPath(pathStr: string): string {
   if (pathStr.startsWith("/uploads/")) {

@@ -48,7 +48,7 @@ const AdminProtectedRoute = lazy(() => import("./components/admin/AdminProtected
 
 const googleClientId =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  "869996967103-hjnsmc4vl29bqdj34lq7fm6qnte1cdct.apps.googleusercontent.com";
+  "533417419450-vmc801eqfasd934h51t3lm2om1n0e48b.apps.googleusercontent.com";
 
 function PageLoadingFallback() {
   return (

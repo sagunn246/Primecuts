@@ -202,7 +202,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     // Send Web Push to Admin
     sendPushToAdmin({
-      title: `🛎 New Order — ${orderNumber}`,
+      title: `New Order — ${orderNumber}`,
       body: `${customerInfo.name} • Rs. ${grandTotal.toFixed(2)} • ${orderType}`,
       url: `/admin/orders/${orderId}`,
     }).catch(() => {});
@@ -221,7 +221,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     // Send Web Push to Customer
     sendPushToUser(auth.userId, {
-      title: `🥩 Order Placed — #${orderNumber}`,
+      title: `Order Placed — #${orderNumber}`,
       body: `Thank you, ${customerInfo.name.split(" ")[0]}! Your fresh meat order of Rs. ${grandTotal.toFixed(0)} has been received and is being prepared.`,
       url: `/order/${orderNumber}`,
     }).catch(() => {});

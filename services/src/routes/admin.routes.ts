@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { query } from "../db";
-import { signAdminToken, requireAdminMiddleware } from "../auth";
+import { signAdminToken, requireAdminMiddleware, getIsAdmin } from "../auth";
 import { sendPushToUser } from "../webpush";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import crypto from "crypto";
@@ -50,8 +50,9 @@ router.post("/logout", (req: Request, res: Response) => {
 });
 
 // Admin Auth Verification
-router.get("/me", requireAdminMiddleware, (req: Request, res: Response): void => {
-  res.json({ success: true, authenticated: true });
+router.get("/me", async (req: Request, res: Response): Promise<void> => {
+  const isAdmin = await getIsAdmin(req);
+  res.json({ success: true, authenticated: isAdmin });
 });
 
 function parseDeliveryTimeSlot(o: any): string | null {
@@ -639,7 +640,7 @@ router.patch("/orders/:id/payment", requireAdminMiddleware, async (req: Request,
       );
 
       sendPushToUser(order.user_id, {
-        title: "💳 Payment Confirmed!",
+        title: "Payment Confirmed",
         body: msg,
         url: `/order/${order.order_number}`,
       }).catch(() => { });

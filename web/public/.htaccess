@@ -34,8 +34,20 @@
   ExpiresByType application/json "access plus 0 seconds"
 </IfModule>
 
-# Security & CORS Headers for Assets
+# Never cache Service Worker or Web Manifest so mobile PWA push updates immediately
 <IfModule mod_headers.c>
+  <FilesMatch "^(sw\.js|manifest\.json|index\.html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Allow Google OAuth Sign-In popup communication on cPanel Apache / LiteSpeed
+  <FilesMatch "\.(html)$">
+    Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+  </FilesMatch>
+
+  # Security & CORS Headers for Assets
   <FilesMatch "\.(ico|jpe?g|png|gif|svg|webp|woff2?|css|js)$">
     Header set Access-Control-Allow-Origin "*"
   </FilesMatch>

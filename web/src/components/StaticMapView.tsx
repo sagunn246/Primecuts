@@ -119,7 +119,8 @@ export default function StaticMapView({ address, latitude, longitude }: StaticMa
                 <path d="M12 2C7.58 2 4 5.58 4 10C4 16 12 22 12 22C12 22 20 16 20 10C20 5.58 16.42 2 12 2Z" fill="#EA4335"/>
                 <circle cx="12" cy="10" r="3.5" fill="#FFFFFF"/>
               </svg>
-              <span>Google Maps ↗</span>
+              <span>Google Maps</span>
+              <ExternalLink className="w-3 h-3" />
             </a>
           </div>
         )}

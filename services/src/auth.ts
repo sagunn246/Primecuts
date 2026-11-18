@@ -52,9 +52,27 @@ export async function verifyUserToken(token: string): Promise<AuthUserPayload | 
 }
 
 export async function getAuthUser(req: Request): Promise<AuthUserPayload | null> {
-  const token = req.cookies?.user_token || (req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null);
-  if (!token) return null;
-  return await verifyUserToken(token);
+  const authHeader = (req.headers.authorization || req.headers["x-access-token"]) as string;
+  let bearerToken: string | null = null;
+  if (authHeader) {
+    if (authHeader.startsWith("Bearer ")) {
+      bearerToken = authHeader.slice(7).trim().replace(/^["']|["']$/g, "");
+    } else {
+      bearerToken = authHeader.trim().replace(/^["']|["']$/g, "");
+    }
+  }
+  const cookieToken = req.cookies?.user_token || null;
+
+  if (bearerToken) {
+    const verified = await verifyUserToken(bearerToken);
+    if (verified) return verified;
+  }
+
+  if (cookieToken) {
+    return await verifyUserToken(cookieToken);
+  }
+
+  return null;
 }
 
 export async function getIsAdmin(req: Request): Promise<boolean> {
@@ -67,9 +85,18 @@ export async function getIsAdmin(req: Request): Promise<boolean> {
       bearerToken = authHeader.trim().replace(/^["']|["']$/g, "");
     }
   }
-  const token = req.cookies?.admin_token || bearerToken;
-  if (!token) return false;
-  return await verifyAdminToken(token);
+  const cookieToken = req.cookies?.admin_token || null;
+
+  if (bearerToken) {
+    const valid = await verifyAdminToken(bearerToken);
+    if (valid) return true;
+  }
+
+  if (cookieToken) {
+    return await verifyAdminToken(cookieToken);
+  }
+
+  return false;
 }
 
 // Middleware to protect Customer routes

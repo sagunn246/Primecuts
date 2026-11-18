@@ -643,13 +643,23 @@ export default function ProductForm({ product, initialData, isEdit }: ProductFor
             <button
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, isAvailable: !prev.isAvailable }))}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                 formData.isAvailable
                   ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
                   : "bg-red-50 text-red-700 border border-red-300"
               }`}
             >
-              {formData.isAvailable ? "✓ In Stock" : "✕ Out of Stock"}
+              {formData.isAvailable ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>In Stock</span>
+                </>
+              ) : (
+                <>
+                  <X className="w-3.5 h-3.5" />
+                  <span>Out of Stock</span>
+                </>
+              )}
             </button>
           </div>
         </div>

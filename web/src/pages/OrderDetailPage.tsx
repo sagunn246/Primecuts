@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import CopyOrderButton from "../components/CopyOrderButton";
 import LiveOrderSection from "../components/LiveOrderSection";
-import PushNotificationSetup from "../components/PushNotificationSetup";
 import { printThermalReceipt } from "../utils/printThermalReceipt";
 import { getOrderDeliverySlot, getCleanOrderNotes } from "../utils/orderUtils";
 import SEO from "../components/SEO";
@@ -344,10 +343,6 @@ ${order.orderType === "delivery" ? "Delivery" : "Pickup"}${
           </div>
         </div>
       </div>
-
-      {order.userId && (
-        <PushNotificationSetup userId={order.userId.toString()} />
-      )}
     </div>
   );
 }

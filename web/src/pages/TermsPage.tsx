@@ -223,19 +223,21 @@ export default function TermsPage() {
         </div>
 
         {/* Back links */}
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center flex items-center justify-center gap-3">
           <Link
             to="/"
-            className="text-sm font-bold text-stone-500 hover:text-primary transition-colors"
+            className="text-sm font-bold text-stone-500 hover:text-primary transition-colors inline-flex items-center gap-1"
           >
-            ← Back to Home
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
           </Link>
-          <span className="mx-3 text-stone-300">·</span>
+          <span className="text-stone-300">·</span>
           <Link
             to="/privacy-policy"
-            className="text-sm font-bold text-stone-500 hover:text-primary transition-colors"
+            className="text-sm font-bold text-stone-500 hover:text-primary transition-colors inline-flex items-center gap-1"
           >
-            Privacy Policy →
+            <span>Privacy Policy</span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>

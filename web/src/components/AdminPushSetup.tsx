@@ -57,7 +57,7 @@ export default function AdminPushSetup() {
         </button>
       </div>
 
-      <h4 className="font-black text-white text-base mb-1">Enable Admin Order Alerts 🛎️</h4>
+      <h4 className="font-black text-white text-base mb-1">Enable Admin Order Alerts</h4>
       <p className="text-xs text-stone-300 font-medium leading-relaxed mb-4">
         Receive instant push notifications on your laptop & mobile device whenever a customer places an order or cancels!
       </p>

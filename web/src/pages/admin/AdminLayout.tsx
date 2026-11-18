@@ -208,9 +208,7 @@ function AdminLayoutContent() {
               </Link>
             )}
             <div className="h-4 w-px bg-stone-200" />
-            <div className="text-stone-700">
-              <NotificationBell type="admin" />
-            </div>
+            <NotificationBell type="admin" theme="light" />
           </div>
         </header>
 

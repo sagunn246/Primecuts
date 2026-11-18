@@ -3,6 +3,11 @@
  * Works across Windows, macOS (Safari/Chrome), Android, and iOS (iPhone/iPad PWA)
  */
 
+const DEFAULT_VAPID_PUBLIC_KEY =
+  "BPfuXjpENCG-zXqCJe8cBaUTWD97UZRqEJBU8RsGwq5RSbEgoJPRSLwVO18kRNC8ZZ-2ctRs4bhSZd5B3Hbgu94";
+
+const SW_FALLBACK_STORAGE_KEY = "prime_sw_notifications_active";
+
 export function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -10,9 +15,24 @@ export function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
+function uint8ArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 let sharedAudioCtx: AudioContext | null = null;
 
 export function playAlertChime() {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem("pref_sound_enabled") === "false") return;
+
   try {
     const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtxClass) return;
@@ -79,6 +99,61 @@ export function isStandalonePWA(): boolean {
 }
 
 /**
+ * Returns current push notification capability and subscription state
+ */
+export async function getPushNotificationState(): Promise<{
+  supported: boolean;
+  requiresIOSInstall: boolean;
+  permission: NotificationPermission;
+  subscribed: boolean;
+}> {
+  if (typeof window === "undefined") {
+    return {
+      supported: false,
+      requiresIOSInstall: false,
+      permission: "default",
+      subscribed: false,
+    };
+  }
+
+  const requiresIOSInstall = isIOS() && !isStandalonePWA();
+  const hasAPI = "Notification" in window && "serviceWorker" in navigator;
+
+  if (!hasAPI) {
+    return {
+      supported: false,
+      requiresIOSInstall,
+      permission: "default",
+      subscribed: false,
+    };
+  }
+
+  const permission = Notification.permission;
+  let subscribed = false;
+
+  if (permission === "granted") {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.pushManager) {
+        const sub = await reg.pushManager.getSubscription();
+        subscribed = !!sub;
+      }
+    } catch {}
+
+    if (!subscribed && localStorage.getItem(SW_FALLBACK_STORAGE_KEY) === "true") {
+      subscribed = true;
+    }
+  }
+
+  return {
+    supported: true,
+    requiresIOSInstall,
+    permission,
+    subscribed,
+  };
+}
+
+/**
  * Requests Notification permission safely across modern browsers and Safari
  * (MUST be called synchronously from user click gesture to satisfy Safari/WebKit security policy)
  */
@@ -87,12 +162,10 @@ export async function safeRequestPermission(): Promise<NotificationPermission> {
     return "denied";
   }
 
-  // Modern Promise-based requestPermission
   try {
     const permission = await Notification.requestPermission();
     return permission;
   } catch {
-    // Legacy callback-based fallback for older WebKit / Safari
     return new Promise<NotificationPermission>((resolve) => {
       try {
         Notification.requestPermission((result) => {
@@ -119,19 +192,13 @@ export async function triggerDeviceNotification(
   }
 ) {
   if (typeof window === "undefined") return;
+  if (localStorage.getItem("pref_order_alerts") === "false") return;
 
-  // 1. Play audio chime
+  // 1. Play audio chime (respects pref_sound_enabled)
   playAlertChime();
 
-  if (!("Notification" in window)) {
-    console.warn("[Notification] Browser does not support Notification API.");
-    return;
-  }
-
-  if (Notification.permission !== "granted") {
-    console.warn("[Notification] Notification permission is not granted. Current state:", Notification.permission);
-    return;
-  }
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
 
   const origin = window.location.origin;
   const iconUrl = options.icon
@@ -143,18 +210,24 @@ export async function triggerDeviceNotification(
     ? options.badge.startsWith("http")
       ? options.badge
       : `${origin}${options.badge}`
-    : `${origin}/icon-192x192.png`;
+    : `${origin}/favicon-circle.png`;
 
-  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  let targetUrl = `${origin}/`;
+  try {
+    targetUrl = new URL(options.url || "/", origin).href;
+  } catch {}
+
+  const tag = options.tag || `prime-cuts-${Date.now()}`;
 
   const notificationOptions: any = {
     body: options.body,
     icon: iconUrl,
     badge: badgeUrl,
-    data: { url: options.url || "/" },
-    tag: options.tag || `prime-cuts-${Date.now()}`,
-    vibrate: [250, 100, 250, 100, 250],
-    requireInteraction: !isMobile, // False on mobile so it stays in mobile notification center!
+    data: { url: targetUrl },
+    tag,
+    renotify: true,
+    vibrate: [200, 100, 200],
+    requireInteraction: false, // Must be false on mobile so notification stays in mobile notification center
     silent: false,
   };
 
@@ -167,7 +240,17 @@ export async function triggerDeviceNotification(
       }
       const activeReg = await navigator.serviceWorker.ready;
       if (activeReg && activeReg.showNotification) {
-        await activeReg.showNotification(title, notificationOptions);
+        try {
+          await activeReg.showNotification(title, notificationOptions);
+        } catch {
+          await activeReg.showNotification(title, {
+            body: options.body,
+            icon: iconUrl,
+            badge: badgeUrl,
+            data: { url: targetUrl },
+            tag,
+          });
+        }
         return;
       }
     } catch (swErr) {
@@ -175,7 +258,10 @@ export async function triggerDeviceNotification(
     }
   }
 
-  // Attempt 2: Direct browser Notification constructor fallback (Windows / Desktop Chrome / Firefox only)
+  // Attempt 2: Direct browser Notification constructor fallback (Desktop Chrome / Firefox)
+  const isMobile =
+    typeof navigator !== "undefined" &&
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (!isMobile) {
     try {
       const notif = new Notification(title, notificationOptions);
@@ -192,20 +278,38 @@ export async function triggerDeviceNotification(
   }
 }
 
+async function fetchVapidPublicKey(): Promise<string> {
+  try {
+    const vapidRes = await fetch("/api/push/vapid", { cache: "no-store" });
+    if (vapidRes.ok) {
+      const data = await vapidRes.json();
+      if (data?.publicKey && typeof data.publicKey === "string" && data.publicKey.length >= 80) {
+        return data.publicKey.trim();
+      }
+    }
+  } catch {}
+  return DEFAULT_VAPID_PUBLIC_KEY;
+}
+
+let activeSubscribePromise: Promise<PushSubscription | null> | null = null;
+
 /**
- * Subscribes the current device to push notifications and syncs with backend MySQL
- * Compatible with Apple iOS 16.4+, macOS Safari, Chrome, Edge, and Android
+ * Subscribes the current device to push notifications and syncs with backend MySQL.
+ * Deduplicates concurrent calls and falls back cleanly to Service Worker Notification Center
+ * mode if the browser's push service (e.g. Brave or restricted FCM) throws AbortError.
  */
-export async function registerDevicePushSubscription(type: "customer" | "admin", userId?: string) {
+export async function registerDevicePushSubscription(
+  type: "customer" | "admin",
+  userId?: string
+): Promise<PushSubscription | null> {
   if (typeof window === "undefined") {
     throw new Error("Push notifications are not supported in this environment.");
   }
 
-  // Special helpful message for iOS Safari in non-standalone browser tab
   if (isIOS() && !isStandalonePWA()) {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
       throw new Error(
-        "On iPhone/iPad: Tap the Share button (⎋ / ⬆) at the bottom of Safari, tap 'Add to Home Screen', then open Prime Cuts from your home screen to enable notifications."
+        "On iPhone/iPad: Tap the Share button in Safari, tap 'Add to Home Screen', then open Prime Cuts from your Home Screen to enable mobile push notifications."
       );
     }
   }
@@ -214,108 +318,149 @@ export async function registerDevicePushSubscription(type: "customer" | "admin",
     throw new Error("Push notifications are not supported on this browser.");
   }
 
-  // CRITICAL FOR SAFARI/APPLE: Request permission FIRST directly inside the user gesture
+  // Request permission FIRST directly inside the user gesture
   const permission = await safeRequestPermission();
   if (permission !== "granted") {
-    throw new Error("Notification permission was denied. Please allow notifications in browser site settings.");
+    throw new Error(
+      "Notification permission was denied. Please allow notifications in your browser or phone settings."
+    );
   }
 
-  // Fetch VAPID Key with multi-path check and default fallback
-  let publicKey = "";
-  try {
-    const vapidRes = await fetch("/api/push/vapid");
-    if (vapidRes.ok) {
-      const data = await vapidRes.json();
-      publicKey = data.publicKey;
-    }
-  } catch (e) {
-    console.warn("[Push] /api/push/vapid fetch error, attempting direct path...", e);
+  // Deduplicate concurrent subscription attempts (e.g., AdminPushSetup + NotificationBell)
+  if (activeSubscribePromise) {
+    return activeSubscribePromise;
   }
 
-  if (!publicKey) {
+  activeSubscribePromise = (async (): Promise<PushSubscription | null> => {
     try {
-      const directRes = await fetch("/push/vapid");
-      if (directRes.ok) {
-        const data = await directRes.json();
-        publicKey = data.publicKey;
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        reg = await navigator.serviceWorker.register("/sw.js");
       }
-    } catch {}
-  }
 
-  // Ultimate fallback to default production VAPID key to ensure notifications never fail
-  if (!publicKey) {
-    publicKey = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
-  }
+      const activeReg = await navigator.serviceWorker.ready;
 
-  let reg = await navigator.serviceWorker.getRegistration();
-  if (!reg) {
-    reg = await navigator.serviceWorker.register("/sw.js");
-  }
+      // Wait briefly if service worker is still activating
+      if (!activeReg.active) {
+        await delay(250);
+      }
 
-  const activeReg = await navigator.serviceWorker.ready;
+      if (!activeReg.pushManager) {
+        localStorage.setItem(SW_FALLBACK_STORAGE_KEY, "true");
+        return null;
+      }
 
-  // Clean old mismatched subscription if any
-  const existingSub = await activeReg.pushManager.getSubscription();
-  if (existingSub) {
-    try {
-      await existingSub.unsubscribe();
-    } catch (e) {
-      console.warn("[Push] Old sub cleanup warning:", e);
+      const serverKeyStr = await fetchVapidPublicKey();
+      const candidateKeys = Array.from(
+        new Set([serverKeyStr, DEFAULT_VAPID_PUBLIC_KEY])
+      );
+
+      let sub = await activeReg.pushManager.getSubscription();
+
+      // If an existing subscription exists, check if its key matches
+      if (sub) {
+        const existingKeyBuf = sub.options?.applicationServerKey;
+        const existingKeyBytes = existingKeyBuf ? new Uint8Array(existingKeyBuf) : null;
+        const targetBytes = urlBase64ToUint8Array(candidateKeys[0]);
+        if (existingKeyBytes && !uint8ArraysEqual(existingKeyBytes, targetBytes)) {
+          try {
+            await sub.unsubscribe();
+            await delay(350);
+          } catch {}
+          sub = null;
+        }
+      }
+
+      // Subscribe if no active subscription
+      if (!sub) {
+        for (const keyStr of candidateKeys) {
+          try {
+            const appKey = urlBase64ToUint8Array(keyStr);
+            sub = await activeReg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: appKey,
+            });
+            if (sub) break;
+          } catch {
+            try {
+              const stale = await activeReg.pushManager.getSubscription();
+              if (stale) {
+                await stale.unsubscribe();
+                await delay(400);
+              }
+              const appKey = urlBase64ToUint8Array(keyStr);
+              sub = await activeReg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: appKey,
+              });
+              if (sub) break;
+            } catch {
+              // Try next key or fall through to SW notification center mode
+            }
+          }
+        }
+      }
+
+      localStorage.setItem(SW_FALLBACK_STORAGE_KEY, "true");
+
+      if (sub) {
+        const subJson = sub.toJSON();
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subscription: subJson,
+            type,
+            userId: userId || undefined,
+          }),
+        }).catch(() => {});
+      }
+
+      return sub;
+    } finally {
+      activeSubscribePromise = null;
     }
-  }
+  })();
 
-  let sub: PushSubscription;
-  try {
-    sub = await activeReg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    });
-  } catch (subErr) {
-    const staleSub = await activeReg.pushManager.getSubscription();
-    if (staleSub) await staleSub.unsubscribe();
-    sub = await activeReg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    });
-  }
-
-  const subJson = sub.toJSON();
-
-  const res = await fetch("/api/push/subscribe", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      subscription: subJson,
-      type,
-      userId: userId || undefined,
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to register subscription on backend server.");
-  }
-
-  return sub;
+  return activeSubscribePromise;
 }
 
 /**
- * Automatically purges any foreign or stale service workers registered on localhost:3000
- * from other projects (e.g. past restaurant/KOT apps)
+ * Unsubscribes the current device from push notifications
+ */
+export async function unsubscribeDevicePushSubscription() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(SW_FALLBACK_STORAGE_KEY);
+
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg?.pushManager ? await reg.pushManager.getSubscription() : null;
+    if (sub) {
+      const endpoint = sub.endpoint;
+      await sub.unsubscribe();
+      await fetch("/api/push/subscribe", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint }),
+      }).catch(() => {});
+    }
+  } catch {}
+}
+
+/**
+ * Automatically purges any foreign or stale service workers registered from other projects
  */
 export async function cleanStaleServiceWorkers() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const reg of registrations) {
-      const scriptUrl = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || "";
-      // If not pointing to current sw.js, unregister it
+      const scriptUrl =
+        reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || "";
       if (!scriptUrl.endsWith("/sw.js")) {
-        console.log("[ServiceWorker] Purging stale registration:", scriptUrl);
         await reg.unregister();
       }
     }
-  } catch (err) {
-    console.warn("[ServiceWorker] Cleanup check note:", err);
-  }
+  } catch {}
 }
-

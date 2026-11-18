@@ -15,6 +15,12 @@ export default function AdminLoginPage() {
   useEffect(() => {
     let isMounted = true;
     async function checkAuth() {
+      const storedToken = localStorage.getItem("admin_token");
+      if (!storedToken) {
+        if (isMounted) setCheckingInitialAuth(false);
+        return;
+      }
+
       try {
         const res = await fetch("/api/admin/me", { credentials: "include" });
         if (res.ok) {
@@ -24,6 +30,7 @@ export default function AdminLoginPage() {
             return;
           }
         }
+        localStorage.removeItem("admin_token");
       } catch {
         // Not authenticated
       } finally {

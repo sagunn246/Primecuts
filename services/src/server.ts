@@ -96,7 +96,7 @@ const apiRouter = express.Router();
 apiRouter.get("/", (_req: Request, res: Response) => {
   res.json({
     success: true,
-    message: "🥩 Prime Cuts API is online",
+    message: "Prime Cuts API is online",
     status: "operational",
     timestamp: new Date().toISOString(),
   });
@@ -193,15 +193,15 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 async function startServer() {
   const onListening = async () => {
     console.log(`========================================`);
-    console.log(`🥩 Prime Cuts | Artisanal Butcher House Server Running!`);
-    console.log(`📡 URL / Socket: ${PORT}`);
+    console.log(`Prime Cuts | Artisanal Butcher House Server Running!`);
+    console.log(`URL / Socket: ${PORT}`);
     console.log(`========================================`);
 
     try {
       await initializeDatabase();
     } catch (dbError: any) {
-      console.warn(`⚠️ Database connection warning:`, dbError.message || dbError);
-      console.warn(`👉 Note: Start MySQL with 'npm run docker:up' or local MySQL service.`);
+      console.warn(`[Database Warning]:`, dbError.message || dbError);
+      console.warn(`Note: Start MySQL with 'npm run docker:up' or local MySQL service.`);
     }
   };
 
@@ -211,10 +211,10 @@ async function startServer() {
 
   server.on("error", (err: any) => {
     if (err.code === "EADDRINUSE") {
-      console.error(`❌ Port ${PORT} is already in use by another process.`);
-      console.error(`👉 Tip: Free the port or run: taskkill /F /IM node.exe`);
+      console.error(`[Error] Port ${PORT} is already in use by another process.`);
+      console.error(`Tip: Free the port or run: taskkill /F /IM node.exe`);
     } else {
-      console.error("❌ Server error:", err);
+      console.error("[Server Error]:", err);
     }
     process.exit(1);
   });

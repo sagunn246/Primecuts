@@ -17,6 +17,8 @@ import {
   AlertCircle,
   Info,
   Zap,
+  ClipboardList,
+  ShoppingBag,
 } from "lucide-react";
 
 interface Section {
@@ -247,7 +249,8 @@ export default function AdminGuidePage() {
         <div className="space-y-8">
           <div className="space-y-4">
             <h3 className="font-black text-stone-800 text-lg border-b border-stone-100 pb-2">
-              📋 Products List
+              <ClipboardList className="inline w-5 h-5 mr-2 text-[#ffc107]" />
+              Products List
             </h3>
             <p className="text-stone-600 text-sm leading-relaxed">
               Navigate to <strong>Products</strong> in the sidebar to see all
@@ -305,7 +308,8 @@ export default function AdminGuidePage() {
         <div className="space-y-8">
           <div className="space-y-4">
             <h3 className="font-black text-stone-800 text-lg border-b border-stone-100 pb-2">
-              📑 Orders List & Management
+              <ShoppingBag className="inline w-5 h-5 mr-2 text-[#ffc107]" />
+              Orders List & Management
             </h3>
             <p className="text-stone-600 text-sm leading-relaxed">
               The Orders page shows all customer orders in real time. You can update status to

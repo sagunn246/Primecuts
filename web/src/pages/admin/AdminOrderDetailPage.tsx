@@ -102,10 +102,10 @@ export default function AdminOrderDetailPage() {
   const deliverySlot = getOrderDeliverySlot(order);
   const cleanNotes = getCleanOrderNotes(order);
 
-  const riderDispatchText = `*🥩 Prime Cuts — Delivery Dispatch*
+  const riderDispatchText = `*Prime Cuts — Delivery Dispatch*
 Order: #${orderNumber}
 Customer: ${customerName} (${customerPhone})
-${deliverySlot ? `⏰ Delivery Time: ${deliverySlot}\n` : ""}${address ? `Address: ${address}` : ""}
+${deliverySlot ? `Delivery Time: ${deliverySlot}\n` : ""}${address ? `Address: ${address}` : ""}
 ${latitude && longitude ? `Google Maps Navigation: https://www.google.com/maps?q=${latitude},${longitude}` : ""}
 
 *Items to Deliver:*

@@ -11,6 +11,7 @@ import {
 import { useStoreStatus } from "../context/StoreStatusContext";
 import { useCart } from "../context/CartContext";
 import MobileSearchModal from "./MobileSearchModal";
+import NotificationBell from "./NotificationBell";
 
 export default function MobileAppHeader() {
   const { isOpen, openTime, closeTime, freeDeliveryThreshold } = useStoreStatus();
@@ -53,8 +54,10 @@ export default function MobileAppHeader() {
           </div>
         </Link>
 
-        {/* Right: Cart & Menu Button */}
+        {/* Right: Notifications, Cart & Menu Button */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <NotificationBell type="customer" theme="dark" />
+
           <button
             type="button"
             onClick={openCart}

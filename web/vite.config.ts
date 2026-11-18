@@ -22,7 +22,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'https://primecuts.rjflowers.com',
+        target: 'https://api.primecutsbutcher.com',
         changeOrigin: true,
         secure: false,
         configure: (proxy) => {
@@ -35,7 +35,7 @@ export default defineConfig({
               setTimeout(() => {
                 if (!(res as any).headersSent) {
                   try {
-                    proxy.web(req, res, { target: 'https://primecuts.rjflowers.com' });
+                    proxy.web(req, res, { target: 'https://api.primecutsbutcher.com' });
                     return;
                   } catch {
                     // Fallthrough to 503 response
@@ -53,7 +53,7 @@ export default defineConfig({
         },
       },
       '/uploads': {
-        target: 'https://primecuts.rjflowers.com',
+        target: 'https://api.primecutsbutcher.com',
         changeOrigin: true,
         secure: false,
       },

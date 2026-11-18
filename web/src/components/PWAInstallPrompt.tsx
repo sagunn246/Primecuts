@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Download, X, Smartphone, CheckCircle2, Share } from "lucide-react";
+import { Download, X, Smartphone, CheckCircle2, Share, PlusSquare } from "lucide-react";
 import { usePWA } from "../context/PWAContext";
 
 export default function PWAInstallPrompt() {
@@ -107,7 +107,8 @@ export default function PWAInstallPrompt() {
                   2
                 </span>
                 <span>
-                  Scroll down and tap <strong>"Add to Home Screen"</strong> (⊕).
+                  Scroll down and tap <strong>"Add to Home Screen"</strong>{" "}
+                  <PlusSquare className="w-3.5 h-3.5 inline text-stone-700 -mt-0.5" />.
                 </span>
               </div>
             </div>

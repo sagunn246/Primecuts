@@ -7,6 +7,16 @@ import crypto from "crypto";
 
 const router = Router();
 
+function parseDeliveryTimeSlot(o: any): string | null {
+  if (o.delivery_time_slot) return o.delivery_time_slot;
+  if (o.deliveryTimeSlot) return o.deliveryTimeSlot;
+  if (o.notes) {
+    const match = String(o.notes).match(/\[Slot:\s*([^\]]+)\]/i);
+    if (match && match[1]) return match[1].trim();
+  }
+  return null;
+}
+
 // Get customer's orders
 router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -20,16 +30,6 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
       "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC",
       [auth.userId]
     );
-
-function parseDeliveryTimeSlot(o: any): string | null {
-  if (o.delivery_time_slot) return o.delivery_time_slot;
-  if (o.deliveryTimeSlot) return o.deliveryTimeSlot;
-  if (o.notes) {
-    const match = String(o.notes).match(/\[Slot:\s*([^\]]+)\]/i);
-    if (match && match[1]) return match[1].trim();
-  }
-  return null;
-}
 
     const mapped = orders.map(o => ({
       _id: o.id,

@@ -33,7 +33,12 @@ import { useUser } from "../context/UserContext";
 import { useCart } from "../context/CartContext";
 import { useStoreStatus } from "../context/StoreStatusContext";
 import { usePWA } from "../context/PWAContext";
-import { registerDevicePushSubscription, triggerDeviceNotification } from "../utils/deviceNotification";
+import {
+  registerDevicePushSubscription,
+  unsubscribeDevicePushSubscription,
+  triggerDeviceNotification,
+  getPushNotificationState,
+} from "../utils/deviceNotification";
 import SEO from "../components/SEO";
 import NotificationBell from "../components/NotificationBell";
 
@@ -179,16 +184,9 @@ export default function AccountPage() {
 
   // Check push subscription status
   const checkPushStatus = async () => {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    setPermission(Notification.permission);
-
-    if ("serviceWorker" in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) {
-        const sub = await reg.pushManager.getSubscription();
-        setSubscribed(!!sub);
-      }
-    }
+    const state = await getPushNotificationState();
+    setPermission(state.permission);
+    setSubscribed(state.subscribed);
   };
 
   const loadNotifications = async () => {
@@ -222,16 +220,7 @@ export default function AccountPage() {
     setTestSuccess(false);
     try {
       if (subscribed) {
-        const reg = await navigator.serviceWorker.getRegistration();
-        const sub = reg ? await reg.pushManager.getSubscription() : null;
-        if (sub) {
-          await sub.unsubscribe();
-          await fetch("/api/push/subscribe", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ endpoint: sub.endpoint }),
-          });
-        }
+        await unsubscribeDevicePushSubscription();
         setSubscribed(false);
       } else {
         await registerDevicePushSubscription("customer", user?.id);
@@ -729,9 +718,10 @@ export default function AccountPage() {
                 <button
                   type="button"
                   onClick={() => switchTab("overview")}
-                  className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                  className="text-xs font-bold text-primary hover:underline cursor-pointer inline-flex items-center gap-1"
                 >
-                  ← Back to Menu
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Menu</span>
                 </button>
               </div>
 
@@ -880,9 +870,10 @@ export default function AccountPage() {
                 <button
                   type="button"
                   onClick={() => switchTab("overview")}
-                  className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                  className="text-xs font-bold text-primary hover:underline cursor-pointer inline-flex items-center gap-1"
                 >
-                  ← Back to Menu
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Menu</span>
                 </button>
               </div>
 
@@ -1093,7 +1084,7 @@ export default function AccountPage() {
                               className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1"
                             >
                               <span>View Order #{notif.order.orderNumber}</span>
-                              <span>→</span>
+                              <ChevronRight className="w-3 h-3" />
                             </Link>
                           </div>
                         )}

@@ -424,8 +424,8 @@ export default function AdminOrdersClient({ initialOrders = [] }: AdminOrdersCli
                     {orderType === "delivery" && status !== "cancelled" && (
                       <a
                         href={`https://wa.me/?text=${encodeURIComponent(
-                          `*🥩 Prime Cuts — Delivery Dispatch*\nOrder: #${orderNumber}\nCustomer: ${customerName} (${customerPhone})\n${
-                            orderSlot ? `⏰ Delivery Time: ${orderSlot}\n` : ""
+                          `*Prime Cuts — Delivery Dispatch*\nOrder: #${orderNumber}\nCustomer: ${customerName} (${customerPhone})\n${
+                            orderSlot ? `Delivery Time: ${orderSlot}\n` : ""
                           }${order.address ? `Address: ${order.address}\n` : ""}${
                             order.latitude && order.longitude
                               ? `Google Maps: https://www.google.com/maps?q=${order.latitude},${order.longitude}\n`
